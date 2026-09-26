@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Condominio El Portal — Plataforma de Transparencia
 
-## Getting Started
+Web donde el responsable de cada gestión publica ingresos/egresos con comprobantes
+leídos por OCR (en el navegador, sin costo) y los vecinos ven todo y aportan en
+campañas de recaudación. Ver `docs/constitution.md` y `docs/specs/Spec-001.md`
+en la carpeta raíz del proyecto.
 
-First, run the development server:
+## Puesta en marcha (una sola vez)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. **Crear proyecto en Supabase** (gratis): https://supabase.com → New project.
+2. **Base de datos**: en el dashboard, SQL Editor → pegar y ejecutar todo
+   `supabase/schema.sql`. **Editar antes** el `codigo_vecino` (ej. `PORTAL2025`)
+   y el `pin_responsable` (ej. `4821`) del INSERT final.
+3. **Almacenamiento**: Storage → New bucket → nombre `comprobantes`, público
+   (Public bucket).
+4. **Credenciales**: Settings → API. Copiar `Project URL` y la `anon public key`
+   en `.env.local` (reemplazar los placeholders) y definir un `AUTH_SECRET`
+   largo y aleatorio.
+5. **Ejecutar local**: `npm install && npm run dev` → http://localhost:3000
+6. **Desplegar a Vercel**: subir el repo a GitHub → vercel.com → Import →
+   agregar las 3 variables de entorno en Settings → Deploy.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Uso
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Vecinos**: reciben el link + código → ven libro contable y campañas.
+- **Responsable**: mismo código + su PIN → además registra movimientos
+  (`/panel/registrar`, con OCR) y crea campañas (`/panel/nueva-campana`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Comandos
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Desarrollo: `npm run dev`
+- Tests: `npm test`
+- Lint: `npm run lint`
+- Producción: `npm run build && npm start`
