@@ -29,44 +29,73 @@ export interface ResultadoOCR {
   fecha: string | null; // yyyy-mm-dd
 }
 
-/** Extrae el monto: el número con decimales más grande del texto (formato 1.234,56 o 1234.56). */
+/**
+ * Extrae el monto de un texto OCR en formato boliviano:
+ * punto como separador de miles y coma decimal (1.234,56).
+ * Tolerante a formato US (1,234.56) y a montos sin decimales (1.500).
+ * Devuelve el número candidato más grande (el monto suele ser el importe mayor).
+ */
 export function extraerMonto(texto: string): number | null {
-  const patrones = [
-    /(\d{1,3}(?:\.\d{3})+,\d{2})/g, // 1.234,56
-    /(\d+,\d{2})/g, // 1234,56
-    /(\d{1,3}(?:,\d{3})+\.\d{2})/g, // 1,234.56
-    /(\d+\.\d{2})/g, // 1234.56
-    /(\b\d{2,6}\b)/g, // entero simple
-  ];
-  let mejor: number | null = null;
-  for (const p of patrones) {
-    const encontrados = [...texto.matchAll(p)].map((m) =>
-      normalizarNumero(m[1])
-    );
-    const validos = encontrados.filter(
-      (n) => n !== null && n > 0 && n < 1_000_000
-    ) as number[];
-    if (validos.length) {
-      const max = Math.max(...validos);
-      if (mejor === null || max > mejor) mejor = max;
-    }
-    if (mejor !== null && p.source.includes("\\d{2}")) break; // ya hay candidato con decimales
-  }
-  return mejor;
+  // Descartar fechas para no confundir el año con un monto
+  const sinFechas = texto
+    .replace(/\d{4}-\d{1,2}-\d{1,2}/g, " ")
+    .replace(/\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}/g, " ");
+
+  const tokens = sinFechas.match(/\d[\d.,]*\d|\d/g) ?? [];
+  const candidatos = tokens
+    .map(normalizarNumero)
+    .filter((n): n is number => n !== null && n > 0 && n < 100_000_000);
+
+  if (candidatos.length === 0) return null;
+  return Math.max(...candidatos);
 }
 
-function normalizarNumero(s: string): number | null {
-  const limpio = s.replace(/\s/g, "");
-  // Decide separador decimal: última coma o punto seguida de exactamente 2 dígitos al final
-  const m = limpio.match(/^(\d{1,3}(?:[.,]\d{3})*)([.,])(\d{2})$/) ?? null;
-  let num: string;
-  if (m) {
-    num = m[1].replace(/[.,]/g, "") + "." + m[3]; // formato es-BO
+/**
+ * Interpreta un número con separadores según el formato boliviano:
+ * - ambos separadores → el último es decimal, el otro miles (1.234,56 / 1,234.56)
+ * - solo coma → 1-2 dígitos al final = decimal (350,00); grupos de 3 = miles (1,500)
+ * - solo punto → grupos de 3 = miles (1.500); 1-2 dígitos al final = decimal (350.50)
+ */
+export function normalizarNumero(token: string): number | null {
+  const t = token.replace(/\s/g, "");
+  if (!/^\d[\d.,]*$/.test(t)) return null;
+
+  const tieneComa = t.includes(",");
+  const tienePunto = t.includes(".");
+
+  let entero: string;
+  let decimal = "";
+
+  if (tieneComa && tienePunto) {
+    const ultComa = t.lastIndexOf(",");
+    const ultPunto = t.lastIndexOf(".");
+    const sepDecimal = ultComa > ultPunto ? "," : ".";
+    const sepMiles = sepDecimal === "," ? "." : ",";
+    const partes = t.split(sepDecimal);
+    decimal = partes.pop() ?? "";
+    entero = partes.join("").split(sepMiles).join("");
+  } else if (tieneComa) {
+    const partes = t.split(",");
+    if (partes.length === 2 && /^\d{1,2}$/.test(partes[1])) {
+      entero = partes[0];
+      decimal = partes[1];
+    } else {
+      entero = partes.join("");
+    }
+  } else if (tienePunto) {
+    const partes = t.split(".");
+    if (partes.length === 2 && /^\d{1,2}$/.test(partes[1])) {
+      entero = partes[0];
+      decimal = partes[1];
+    } else {
+      entero = partes.join("");
+    }
   } else {
-    num = limpio.replace(/,/g, ""); // 1,234 estilo en sin decimales explícitos
+    entero = t;
   }
-  const n = Number(num);
-  return Number.isFinite(n) ? n : null;
+
+  const num = decimal !== "" ? Number(`${entero}.${decimal}`) : Number(entero);
+  return Number.isFinite(num) ? num : null;
 }
 
 const MESES: Record<string, string> = {
