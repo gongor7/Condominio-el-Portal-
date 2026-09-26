@@ -1,0 +1,24 @@
+# Tareas — Spec-001 restante (orden por dependencia)
+
+- [x] T1: Reglas puras de cierre de gestión en `contabilidad.ts` (RF-10, QA 9/10)
+  - RF: RF-10 · Hecho cuando: `puedeCerrarGestion` bloquea con campañas activas y los tests de Vitest pasan.
+- [x] T2: Tests + regla de inmutabilidad `esGestionInmutable` (RF-10, QA 14/15)
+  - RF: RF-10 · Hecho cuando: tests verifican que gestión cerrada rechaza escrituras (función pura).
+- [x] T3: Migración SQL delta (gestiones, campanas, aportes, campana_gastos) en `supabase/schema.sql`
+  - RF: RF-10/11 · Hecho cuando: el archivo SQL incluye las nuevas columnas sin romper el schema existente.
+- [x] T4: API `POST /api/gestiones/[id]/cerrar` con validaciones T1 (RF-10)
+  - Hecho cuando: responde 409 si hay campañas activas y 200 con cierre correcto (integración con mock).
+- [x] T5: Guardas de inmutabilidad en `/api/transacciones` y `/api/aportes` (RF-10, RF-11)
+  - Hecho cuando: escrituras sobre gestión/campaña cerrada responden 409 (mock).
+- [x] T6: UI cierre de gestión en panel (botón responsable + confirmación) (RF-10)
+  - Hecho cuando: flujo manual funciona; cierre visible con fecha y nota.
+- [x] T7: Transición de campaña: tests + regla `cerrarCampana` (RF-8)
+  - Hecho cuando: aportes congelados tras cierre (test unitario).
+- [x] T8: API `POST /api/campanas/[id]/cerrar` + UI botón responsable (RF-8, RF-9)
+  - Hecho cuando: campaña cerrada muestra veredicto sobra/falta/cuadra y rechaza aportes.
+- [x] T9: Anulación con auditoría: tests + columnas + API `POST /api/transacciones/[id]/anular` (RF-11, QA 3)
+  - Hecho cuando: anular exige motivo, marca `anulado_en` y el saldo excluye el registro (tests verdes).
+- [x] T10: Ajuste PDF sin OCR en `/panel/registrar` y `form-aporte` (RF-4, QA 1)
+  - Hecho cuando: al elegir PDF la UI avisa "sin lectura automática" y permite publicar con datos manuales.
+- [x] T11: Validación final RF por RF + suite completa verde
+  - Hecho cuando: `npm test` y `npm run build` pasan; tabla de cobertura completa.
