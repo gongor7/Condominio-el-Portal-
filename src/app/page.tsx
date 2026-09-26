@@ -4,7 +4,7 @@ import {
   BookOpenText,
   HandCoins,
   Scale,
-  CalendarDays,
+  Check,
 } from "lucide-react";
 import { HeroCarrusel } from "./hero-carrusel";
 import { SalonPublico } from "./salon-publico";
@@ -44,6 +44,56 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Salón de eventos (RF-1: calendario público, protagonista) */}
+      <section className="relative overflow-hidden py-16">
+        <div
+          className="pointer-events-none absolute inset-0 bg-emerald-500/5"
+          style={{
+            maskImage: "radial-gradient(60% 60% at 70% 40%, black, transparent)",
+            WebkitMaskImage:
+              "radial-gradient(60% 60% at 70% 40%, black, transparent)",
+          }}
+        />
+        <div className="relative mx-auto grid max-w-5xl items-center gap-10 px-4 lg:grid-cols-2">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-300">
+              Salón de eventos
+            </p>
+            <h2 className="mt-3 text-3xl font-bold leading-tight sm:text-4xl">
+              Consulta la disponibilidad al instante
+            </h2>
+            <p className="mt-4 max-w-md text-slate-300">
+              El calendario del salón, siempre al día y visible para todos.
+              Reserva tu fecha con el responsable y tu pago queda registrado con
+              comprobante validado.
+            </p>
+            <ul className="mt-5 space-y-2.5 text-sm text-slate-300">
+              {[
+                "Fechas libres y ocupadas en tiempo real",
+                "Todo pago con comprobante verificado",
+                "La recaudación del salón es pública",
+              ].map((t) => (
+                <li key={t} className="flex items-center gap-2.5">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20">
+                    <Check className="h-3.5 w-3.5 text-emerald-400" />
+                  </span>
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 text-sm text-slate-400">
+              Para reservar, habla con el responsable de la gestión ·{" "}
+              <Link href="/entrar" className="text-emerald-300 hover:underline">
+                vecinos: ver detalle en el panel
+              </Link>
+            </p>
+          </div>
+          <div className="rounded-3xl bg-gradient-to-br from-emerald-500/10 to-transparent p-1.5 shadow-2xl shadow-emerald-500/10">
+            <SalonPublico />
+          </div>
+        </div>
+      </section>
+
       {/* Qué ofrece */}
       <section className="mx-auto max-w-5xl px-4 py-16">
         <div className="grid gap-6 sm:grid-cols-3">
@@ -74,15 +124,6 @@ export default function Landing() {
             </div>
           ))}
         </div>
-      </section>
-
-      {/* Salón de eventos (RF-1: calendario público) */}
-      <section className="mx-auto max-w-2xl px-4 pb-16">
-        <div className="mb-6 flex items-center justify-center gap-2 text-2xl font-semibold">
-          <CalendarDays className="h-6 w-6 text-emerald-400" />
-          Salón de eventos
-        </div>
-        <SalonPublico />
       </section>
 
       {/* Galería */}

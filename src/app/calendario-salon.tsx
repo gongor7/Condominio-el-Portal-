@@ -96,34 +96,34 @@ export function CalendarioSalon({
   const [a, m] = mes.split("-").map(Number);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <div className="rounded-[1.25rem] border border-white/10 bg-slate-900/90 p-5 backdrop-blur">
       <div className="flex items-center justify-between">
         <button
           onClick={() => cambiarMes(-1)}
           aria-label="Mes anterior"
-          className="rounded-full p-2 hover:bg-white/10"
+          className="rounded-full border border-white/10 p-2 text-slate-300 transition hover:bg-white/10"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-4 w-4" />
         </button>
-        <p className="text-lg font-semibold">
+        <p className="text-base font-semibold tracking-wide">
           {MESES[m - 1]} {a}
         </p>
         <button
           onClick={() => cambiarMes(1)}
           aria-label="Mes siguiente"
-          className="rounded-full p-2 hover:bg-white/10"
+          className="rounded-full border border-white/10 p-2 text-slate-300 transition hover:bg-white/10"
         >
-          <ChevronRight className="h-5 w-5" />
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="mt-3 grid grid-cols-7 gap-1 text-center text-xs text-slate-400">
+      <div className="mt-4 grid grid-cols-7 gap-1.5 text-center text-[11px] font-medium uppercase tracking-wider text-slate-500">
         {DIAS.map((d) => (
           <span key={d} className="py-1">{d}</span>
         ))}
       </div>
 
-      <div className="mt-1 grid grid-cols-7 gap-1">
+      <div className="mt-1.5 grid grid-cols-7 gap-1.5">
         {celdas.map((c, i) =>
           c === null ? (
             <span key={`v-${i}`} />
@@ -138,12 +138,12 @@ export function CalendarioSalon({
                   : `${reservas[c.fecha].vecino_nombre} (${reservas[c.fecha].vecino_casa || "s/c"})${reservas[c.fecha].descripcion ? ` — ${reservas[c.fecha].descripcion}` : ""}`
               }
               className={[
-                "flex aspect-square flex-col items-center justify-center rounded-lg text-sm transition",
+                "flex aspect-square flex-col items-center justify-center rounded-xl text-sm transition",
                 ocupadas.includes(c.fecha)
-                  ? "bg-red-500/20 font-semibold text-red-300"
+                  ? "bg-red-500/15 font-semibold text-red-300 ring-1 ring-inset ring-red-500/30"
                   : c.fecha < hoy
                     ? "text-slate-600"
-                    : "bg-emerald-500/10 font-medium text-emerald-200 hover:bg-emerald-500/25",
+                    : "bg-emerald-500/10 font-medium text-emerald-200 hover:bg-emerald-500/25 hover:ring-1 hover:ring-inset hover:ring-emerald-400/40",
                 c.fecha === hoy ? "ring-2 ring-emerald-400" : "",
               ].join(" ")}
             >
@@ -158,14 +158,16 @@ export function CalendarioSalon({
         )}
       </div>
 
-      <div className="mt-3 flex items-center gap-4 text-xs text-slate-400">
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded bg-emerald-500/40" /> libre
+      <div className="mt-4 flex items-center justify-between border-t border-white/5 pt-3 text-xs text-slate-400">
+        <span className="flex items-center gap-3">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded bg-emerald-500/50" /> libre
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded bg-red-500/50" /> reservado
+          </span>
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded bg-red-500/40" /> reservado
-        </span>
-        {publico && <span>Reservas: solo con el responsable</span>}
+        {publico && <span>Reserva con el responsable</span>}
       </div>
     </div>
   );
