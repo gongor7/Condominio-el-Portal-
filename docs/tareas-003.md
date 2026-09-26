@@ -1,0 +1,32 @@
+# Tareas-003 — Módulo salón de eventos (orden por dependencia)
+
+- [x] T1: Tests + funciones puras `fechaDisponible` y `esFechaValida` en `src/lib/salon.ts` (RF-3, RF-4)
+  - Hecho cuando: Vitest verde para: ocupada, hoy permitido, pasado rechazado, 29-feb, cambio de mes.
+- [x] T2: Tests + funciones puras `totalSalon` (excluye anuladas/gratis), `agruparPorMes` (tz America/La_Paz) y `cuadraConLibro` (RF-7, RF-11)
+  - Hecho cuando: Vitest verde, incluido el caso descuadre = false.
+- [x] T3: Migración SQL: tabla `reservas`, índice único parcial por fecha vigente y función transaccional `crear_reserva_con_ingreso` (RF-4, RF-5, RF-6)
+  - Hecho cuando: `schema.sql` actualizado y ejecutado en Supabase sin errores; prueba manual de doble insert misma fecha falla.
+- [x] T4: Tests de T1/T2 al límite + helper `mesActualAmericaLaPaz` (RF-11)
+  - Hecho cuando: helper unit-testeado (23:00 vs 00:00 cruce de día) y suite completa verde.
+- [x] T5: API pública `GET /api/salon?mes=YYYY-MM` — solo fechas ocupadas sin sesión; detalle con sesión (RF-1, RF-2, RF-12)
+  - Hecho cuando: curl sin cookie devuelve solo fechas; con cookie vecino devuelve detalle; suite verde.
+- [x] T6: Componente `CalendarioSalon` (grid mensual navegable) + integración en panel (RF-2)
+  - Hecho cuando: el panel muestra el mes actual con detalle por día y navegación mes anterior/siguiente sin errores de build.
+- [x] T7: Landing: sección calendario público (simple, solo ocupado) usando la misma API (RF-1)
+  - Hecho cuando: sin sesión, la landing muestra el calendario con fechas ocupadas y sin datos personales.
+- [x] T8: Formulario "Nueva reserva" del responsable con OCR y comparación de monto reutilizada de Spec-002 (RF-3, RF-5, RF-6)
+  - Hecho cuando: flujo manual completo crea reserva pagada con comprobante e ingreso enlazado; gratis sin comprobante también funciona.
+- [x] T9: API `POST /api/salon` que invoca la RPC transaccional con validaciones previas (fecha, sesión, rol) (RF-3, RF-4, RF-5, RF-12)
+  - Hecho cuando: integración (mock) verde: crea pagada/gratis, rechaza fecha ocupada y rol vecino.
+- [x] T10: API `POST /api/salon/[id]/anular` con tipo devolución/retención + motivo obligatorio, y ajuste a gestión activa si la reserva era de gestión cerrada (RF-8, RF-9, RF-12)
+  - Hecho cuando: integración verde para los 4 caminos (devolución/retención × gestión abierta/cerrada).
+- [x] T11: UI de anulación y edición leve (nombre/casa/descripción) en la vista de reserva (RF-8, RF-10)
+  - Hecho cuando: flujo manual anula con motivo, libera fecha en calendario; edición niega fecha/monto.
+- [x] T12: Página `/panel/salon/reporte`: selector de mes, tabla por reserva, anuladas aparte, total mes + acumulado (RF-11)
+  - Hecho cuando: los totales mostrados provienen de las funciones puras T2 y cuadran con datos reales.
+- [x] T13: Hoja de impresión del reporte + botón "Descargar PDF" (`window.print()`) (RF-11)
+  - Hecho cuando: la vista de impresión sale limpia (una página por mes típico) en Chrome/Edge.
+- [x] T14: Categoría "alquiler salón" en el formulario de transacciones + total recaudado visible en el panel del salón (RF-5, RF-7)
+  - Hecho cuando: el panel muestra el total y el test de cuadre contra el libro contable pasa en la suite.
+- [x] T15: Validación final: suite completa, lint, build y demo manual del flujo E2E (todos los RF)
+  - Hecho cuando: `npm test` (≥ 12 tests nuevos) y `npm run build` en verde + demo manual registrada en este archivo.

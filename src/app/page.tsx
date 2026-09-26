@@ -4,8 +4,10 @@ import {
   BookOpenText,
   HandCoins,
   Scale,
+  CalendarDays,
 } from "lucide-react";
 import { HeroCarrusel } from "./hero-carrusel";
+import { SalonPublico } from "./salon-publico";
 
 export const fotos = [
   { src: "/fotos/condominio-1.jpeg", alt: "Piscina del condominio El Portal" },
@@ -72,6 +74,15 @@ export default function Landing() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Salón de eventos (RF-1: calendario público) */}
+      <section className="mx-auto max-w-2xl px-4 pb-16">
+        <div className="mb-6 flex items-center justify-center gap-2 text-2xl font-semibold">
+          <CalendarDays className="h-6 w-6 text-emerald-400" />
+          Salón de eventos
+        </div>
+        <SalonPublico />
       </section>
 
       {/* Galería */}

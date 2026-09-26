@@ -13,6 +13,7 @@ const CATEGORIAS = [
   "servicios básicos",
   "reparación",
   "recaudación",
+  "alquiler salón",
   "otros",
 ];
 

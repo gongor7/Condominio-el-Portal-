@@ -114,14 +114,22 @@ export default async function Panel() {
         <section className="mt-10">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Campañas de recaudación</h2>
-            {esResponsable && (
+            <div className="flex gap-2">
               <Link
-                href="/panel/nueva-campana"
-                className="rounded-full bg-emerald-500 px-4 py-1.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
+                href="/panel/salon"
+                className="rounded-full border border-white/15 px-4 py-1.5 text-sm font-semibold hover:bg-white/10"
               >
-                + Nueva campaña
+                Salón de eventos
               </Link>
-            )}
+              {esResponsable && (
+                <Link
+                  href="/panel/nueva-campana"
+                  className="rounded-full bg-emerald-500 px-4 py-1.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
+                >
+                  + Nueva campaña
+                </Link>
+              )}
+            </div>
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {campanasConResumen.length === 0 && (
