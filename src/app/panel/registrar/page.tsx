@@ -58,11 +58,6 @@ export default function Registrar() {
     setMontoDetectado(null);
     setDescartado(false);
     setError(null);
-    if (f.type === "application/pdf") {
-      // Tesseract no lee PDFs: se adjunta sin lectura automática (RF-4)
-      setError("PDF adjuntado sin lectura automática: completa el monto y la fecha a mano.");
-      return;
-    }
     setOcrCorriendo(true);
     try {
       const r = await leerComprobante(f);

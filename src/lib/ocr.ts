@@ -2,6 +2,27 @@
 
 import { createWorker } from "tesseract.js";
 
+/** Convierte la primera página de un PDF a imagen para que el OCR pueda leerla. */
+async function pdfPrimeraPagina(file: File | Blob): Promise<Blob> {
+  const pdfjs = await import("pdfjs-dist");
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+  const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+  const pagina = await pdf.getPage(1);
+  const escala = 2; // resolución suficiente para el OCR sin volverlo lento
+  const viewport = pagina.getViewport({ scale: escala });
+  const canvas = document.createElement("canvas");
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  await pagina.render({
+    canvas,
+    canvasContext: canvas.getContext("2d")!,
+    viewport,
+  } as Parameters<typeof pagina.render>[0]).promise;
+  return new Promise<Blob>((resolve) =>
+    canvas.toBlob((b) => resolve(b ?? new Blob()), "image/png")
+  );
+}
+
 export interface ResultadoOCR {
   texto: string;
   monto: number | null;
@@ -70,11 +91,15 @@ export function extraerFecha(texto: string): string | null {
   return null;
 }
 
-/** Ejecuta OCR sobre una imagen en el navegador (Tesseract, todo local). */
+/** Ejecuta OCR sobre una imagen o PDF (primera página) en el navegador, todo local. */
 export async function leerComprobante(file: File | Blob): Promise<ResultadoOCR> {
+  let entrada: File | Blob = file;
+  if (file.type === "application/pdf") {
+    entrada = await pdfPrimeraPagina(file);
+  }
   const worker = await createWorker("spa");
   try {
-    const { data } = await worker.recognize(file);
+    const { data } = await worker.recognize(entrada);
     const texto = data.text ?? "";
     return { texto, monto: extraerMonto(texto), fecha: extraerFecha(texto) };
   } finally {

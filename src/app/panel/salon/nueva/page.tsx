@@ -36,10 +36,6 @@ export default function NuevaReserva() {
     setMontoDetectado(null);
     setDescartado(false);
     setError(null);
-    if (f.type === "application/pdf") {
-      setError("PDF adjuntado sin lectura automática: escribe el monto a mano.");
-      return;
-    }
     setOcrCorriendo(true);
     try {
       const r = await leerComprobante(f);

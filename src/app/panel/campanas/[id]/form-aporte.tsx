@@ -34,12 +34,6 @@ export default function FormAporte({ campanaId }: { campanaId: string }) {
     setDescartado(false);
     setOcrCorriendo(true);
     setError(null);
-    if (f.type === "application/pdf") {
-      // Tesseract no lee PDFs: se adjunta sin lectura automática (RF-4)
-      setError("PDF adjuntado sin lectura automática: escribe el monto a mano.");
-      setOcrCorriendo(false);
-      return;
-    }
     try {
       const r = await leerComprobante(f);
       setMontoDetectado(r.monto);
