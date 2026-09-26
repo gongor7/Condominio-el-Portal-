@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase, BUCKET } from "@/lib/supabase";
+import { supabaseAdmin, BUCKET } from "@/lib/supabase";
 import { sesionActual } from "@/lib/auth";
+
+const db = supabaseAdmin();
 
 const MAX_MB = 10;
 const TIPOS = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
@@ -31,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   const ext = archivo.name.split(".").pop() ?? "bin";
   const nombre = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage
+  const { error } = await db.storage
     .from(BUCKET)
     .upload(nombre, archivo, { contentType: archivo.type });
 
@@ -42,6 +44,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(nombre);
+  const { data } = db.storage.from(BUCKET).getPublicUrl(nombre);
   return NextResponse.json({ ok: true, url: data.publicUrl });
 }

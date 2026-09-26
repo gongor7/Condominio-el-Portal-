@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
+
+const db = supabaseAdmin();
 import { sesionActual } from "@/lib/auth";
 import { validarTransaccion, puedeEscribirEnGestion } from "@/lib/contabilidad";
 
@@ -24,7 +26,7 @@ export async function POST(req: NextRequest) {
   if (err) return NextResponse.json({ error: err }, { status: 400 });
 
   // Gestión activa
-  const { data: gestion } = await supabase
+  const { data: gestion } = await db
     .from("gestiones")
     .select("id, cerrada")
     .eq("cerrada", false)
@@ -41,7 +43,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: guardia.motivo }, { status: 409 });
   }
 
-  const { data: transaccion, error } = await supabase
+  const { data: transaccion, error } = await db
     .from("transacciones")
     .insert({
       gestion_id: gestion.id,
@@ -62,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   // Si el egreso corresponde a una campaña, registrarlo como gasto de campaña
   if (campana_id && tipo === "egreso") {
-    await supabase.from("campana_gastos").insert({
+    await db.from("campana_gastos").insert({
       campana_id,
       transaccion_id: transaccion.id,
       monto,

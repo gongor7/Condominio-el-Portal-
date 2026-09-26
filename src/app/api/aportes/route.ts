@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
+
+const db = supabaseAdmin();
 import { sesionActual } from "@/lib/auth";
 import { puedeAportar } from "@/lib/contabilidad";
 
@@ -23,7 +25,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { data: campana } = await supabase
+  const { data: campana } = await db
     .from("campanas")
     .select("id, estado, gestiones!inner(cerrada)")
     .eq("id", campana_id)
@@ -46,7 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: guardia.motivo }, { status: 409 });
   }
 
-  const { error } = await supabase.from("aportes").insert({
+  const { error } = await db.from("aportes").insert({
     campana_id,
     vecino_nombre: vecino_nombre.trim(),
     monto: montoNum,

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
+
 import { sesionActual } from "@/lib/auth";
+
+const db = supabaseAdmin();
 
 export async function POST(
   req: NextRequest,
@@ -23,7 +26,7 @@ export async function POST(
     );
   }
 
-  const { data: transaccion } = await supabase
+  const { data: transaccion } = await db
     .from("transacciones")
     .select("id, anulado, gestiones(cerrada)")
     .eq("id", id)
@@ -41,7 +44,7 @@ export async function POST(
     );
   }
 
-  const { error } = await supabase
+  const { error } = await db
     .from("transacciones")
     .update({
       anulado: true,

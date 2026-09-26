@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
+
 import { sesionActual } from "@/lib/auth";
 import { puedeCerrarGestion, saldoGestion } from "@/lib/contabilidad";
+
+const db = supabaseAdmin();
 
 export async function POST(
   req: NextRequest,
@@ -17,7 +20,7 @@ export async function POST(
   const { id } = await params;
   const { nota } = await req.json().catch(() => ({ nota: null }));
 
-  const { data: gestion } = await supabase
+  const { data: gestion } = await db
     .from("gestiones")
     .select("*")
     .eq("id", id)
@@ -33,14 +36,14 @@ export async function POST(
   }
 
   // Campañas activas de esta gestión bloquean el cierre (RF-10)
-  const { count: campanasActivas } = await supabase
+  const { count: campanasActivas } = await db
     .from("campanas")
     .select("id", { count: "exact", head: true })
     .eq("gestion_id", id)
     .eq("estado", "activa");
 
   // Saldo pendiente: queda como aviso, no bloquea
-  const { data: transacciones } = await supabase
+  const { data: transacciones } = await db
     .from("transacciones")
     .select("tipo, monto, anulado")
     .eq("gestion_id", id);
@@ -64,7 +67,7 @@ export async function POST(
     );
   }
 
-  const { error } = await supabase
+  const { error } = await db
     .from("gestiones")
     .update({
       cerrada: true,

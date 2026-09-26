@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
+
+const db = supabaseAdmin();
 import { sesionActual } from "@/lib/auth";
 import { resumenCampana } from "@/lib/contabilidad";
 
@@ -16,7 +18,7 @@ export async function POST(
   }
   const { id } = await params;
 
-  const { data: campana } = await supabase
+  const { data: campana } = await db
     .from("campanas")
     .select("*")
     .eq("id", id)
@@ -30,8 +32,8 @@ export async function POST(
 
   // El cierre con cualquier saldo es válido; se devuelve el veredicto final
   const [{ data: aportes }, { data: gastos }] = await Promise.all([
-    supabase.from("aportes").select("monto, anulado").eq("campana_id", id),
-    supabase.from("campana_gastos").select("monto, anulado").eq("campana_id", id),
+    db.from("aportes").select("monto, anulado").eq("campana_id", id),
+    db.from("campana_gastos").select("monto, anulado").eq("campana_id", id),
   ]);
   const resumen = resumenCampana({
     meta: campana.meta !== null ? Number(campana.meta) : null,
@@ -40,7 +42,7 @@ export async function POST(
     gastos: (gastos ?? []).filter((g) => !g.anulado).map((g) => Number(g.monto)),
   });
 
-  const { error } = await supabase
+  const { error } = await db
     .from("campanas")
     .update({ estado: "cerrada", cerrada_en: new Date().toISOString() })
     .eq("id", id);

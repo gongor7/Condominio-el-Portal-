@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
+
 import { sesionActual } from "@/lib/auth";
+
+const db = supabaseAdmin();
 
 export async function GET() {
   const sesion = await sesionActual();
   if (!sesion) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
-  const { data } = await supabase
+  const { data } = await db
     .from("campanas")
     .select("id, titulo, estado")
     .eq("estado", "activa")
@@ -32,7 +35,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Meta inválida" }, { status: 400 });
   }
 
-  const { data: gestion } = await supabase
+  const { data: gestion } = await db
     .from("gestiones")
     .select("id")
     .eq("cerrada", false)
@@ -43,7 +46,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No hay gestión activa" }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("campanas")
     .insert({
       gestion_id: gestion.id,
