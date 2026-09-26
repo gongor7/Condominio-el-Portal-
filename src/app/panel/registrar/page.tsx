@@ -1,8 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { CheckCircle2, TriangleAlert, XCircle } from "lucide-react";
 import { leerComprobante } from "@/lib/ocr";
+import { compararMontos, formatBs } from "@/lib/contabilidad";
 
 const CATEGORIAS = [
   "mantenimiento",
@@ -16,9 +18,9 @@ const CATEGORIAS = [
 
 export default function Registrar() {
   const router = useRouter();
-  const inputArchivo = useRef<HTMLInputElement>(null);
   const [archivo, setArchivo] = useState<File | null>(null);
-  const [, setOcr] = useState<{ texto: string } | null>(null);
+  const [montoDetectado, setMontoDetectado] = useState<number | null>(null);
+  const [descartado, setDescartado] = useState(false);
   const [ocrCorriendo, setOcrCorriendo] = useState(false);
   const [tipo, setTipo] = useState<"ingreso" | "egreso">("egreso");
   const [monto, setMonto] = useState("");
@@ -40,11 +42,20 @@ export default function Registrar() {
       .catch(() => {});
   }, []);
 
+  // Spec-002 RF-3: comparación en vivo monto escrito vs OCR
+  const comparacion = compararMontos(
+    monto === "" ? null : Number(monto),
+    montoDetectado
+  );
+  const bloquearPorOcr =
+    comparacion.estado === "difiere" && !descartado && !ocrCorriendo;
+
   async function alElegirArchivo(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
     setArchivo(f);
-    setOcr(null);
+    setMontoDetectado(null);
+    setDescartado(false);
     setError(null);
     if (f.type === "application/pdf") {
       // Tesseract no lee PDFs: se adjunta sin lectura automática (RF-4)
@@ -54,7 +65,7 @@ export default function Registrar() {
     setOcrCorriendo(true);
     try {
       const r = await leerComprobante(f);
-      setOcr({ texto: r.texto });
+      setMontoDetectado(r.monto);
       if (r.monto !== null) setMonto(String(r.monto));
       if (r.fecha) setFecha(r.fecha);
     } catch {
@@ -117,7 +128,6 @@ export default function Registrar() {
         </p>
 
         <input
-          ref={inputArchivo}
           type="file"
           accept="image/*,application/pdf"
           onChange={alElegirArchivo}
@@ -145,7 +155,10 @@ export default function Registrar() {
             Monto (Bs)
             <input
               value={monto}
-              onChange={(e) => setMonto(e.target.value)}
+              onChange={(e) => {
+                setMonto(e.target.value);
+                setDescartado(false);
+              }}
               required
               inputMode="decimal"
               className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2"
@@ -187,6 +200,48 @@ export default function Registrar() {
           />
         </label>
 
+        {/* Verificación OCR del monto (Spec-002 RF-3) */}
+        {montoDetectado !== null && monto !== "" && !ocrCorriendo && (
+          <div
+            className={`mt-3 flex items-start gap-3 rounded-lg px-3 py-2.5 text-sm ${
+              comparacion.estado === "coincide"
+                ? "bg-emerald-500/10 text-emerald-300"
+                : descartado
+                  ? "bg-slate-500/10 text-slate-300"
+                  : "bg-amber-400/10 text-amber-300"
+            }`}
+          >
+            {comparacion.estado === "coincide" ? (
+              <>
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                El monto coincide con el comprobante ({formatBs(montoDetectado)}).
+              </>
+            ) : descartado ? (
+              <>
+                <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                Monto del OCR descartado ({formatBs(montoDetectado)}). Continúas
+                con el monto manual.
+              </>
+            ) : (
+              <>
+                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  El comprobante dice {formatBs(montoDetectado)} y escribiste{" "}
+                  {formatBs(Number(monto))} (diferencia{" "}
+                  {formatBs(Math.abs(comparacion.diferencia))}).
+                  <button
+                    type="button"
+                    onClick={() => setDescartado(true)}
+                    className="ml-1 underline underline-offset-2 hover:text-amber-200"
+                  >
+                    El monto detectado está mal, continuar igual
+                  </button>
+                </span>
+              </>
+            )}
+          </div>
+        )}
+
         {tipo === "egreso" && campanas.length > 0 && (
           <label className="mt-3 block text-sm">
             ¿Corresponde a una campaña? (opcional)
@@ -213,10 +268,14 @@ export default function Registrar() {
 
         <button
           type="submit"
-          disabled={guardando || ocrCorriendo}
+          disabled={guardando || ocrCorriendo || bloquearPorOcr}
           className="mt-6 w-full rounded-lg bg-emerald-500 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
         >
-          {guardando ? "Guardando…" : "Publicar movimiento"}
+          {guardando
+            ? "Guardando…"
+            : bloquearPorOcr
+              ? "Corrige el monto o confirma la discrepancia"
+              : "Publicar movimiento"}
         </button>
       </form>
     </main>

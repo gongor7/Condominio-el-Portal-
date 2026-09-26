@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
+import { CircleCheck, CircleMinus, Scale } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { sesionActual } from "@/lib/auth";
-import { formatBs, resumenCampana } from "@/lib/contabilidad";
+import { formatBs, resumenCampana, progresoCampana } from "@/lib/contabilidad";
 import FormAporte from "./form-aporte";
 import { CerrarCampana } from "../../acciones";
 
@@ -43,10 +44,7 @@ export default async function CampanaDetalle({
     gastos: (gastos ?? []).filter((g) => !g.anulado).map((g) => Number(g.monto)),
   });
 
-  const progreso =
-    resumen.meta && resumen.meta > 0
-      ? Math.min(100, Math.round((resumen.recaudado / resumen.meta) * 100))
-      : null;
+  const progreso = progresoCampana(resumen.recaudado, resumen.meta);
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
@@ -82,12 +80,20 @@ export default async function CampanaDetalle({
             </p>
           </div>
           {progreso !== null && (
-            <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-800">
-              <div
-                className="h-full rounded-full bg-emerald-500 transition-all"
-                style={{ width: `${progreso}%` }}
-              />
-            </div>
+            <>
+              <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+                <span>{progreso}% pagado</span>
+                <span>
+                  {formatBs(resumen.recaudado)} de {formatBs(resumen.meta as number)}
+                </span>
+              </div>
+              <div className="mt-1 h-3 overflow-hidden rounded-full bg-slate-800">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all"
+                  style={{ width: `${progreso}%` }}
+                />
+              </div>
+            </>
           )}
           {resumen.faltante !== null && resumen.faltante > 0 && (
             <p className="mt-2 text-sm text-amber-400">
@@ -100,17 +106,28 @@ export default async function CampanaDetalle({
                 Gastado: <b className="text-red-400">{formatBs(resumen.gastado)}</b>
               </p>
               <p
-                className={`mt-1 text-lg font-bold ${
+                className={`mt-1 flex items-center gap-2 text-lg font-bold ${
                   resumen.estadoSugerido === "falta"
                     ? "text-red-400"
                     : "text-emerald-400"
                 }`}
               >
-                {resumen.estadoSugerido === "falta"
-                  ? `⛔ Faltan ${formatBs(Math.abs(resumen.saldo))}`
-                  : resumen.estadoSugerido === "sobra"
-                    ? `✅ Sobran ${formatBs(resumen.saldo)}`
-                    : "⚖️ Cuadra exacto"}
+                {resumen.estadoSugerido === "falta" ? (
+                  <>
+                    <CircleMinus className="h-5 w-5" />
+                    Faltan {formatBs(Math.abs(resumen.saldo))}
+                  </>
+                ) : resumen.estadoSugerido === "sobra" ? (
+                  <>
+                    <CircleCheck className="h-5 w-5" />
+                    Sobran {formatBs(resumen.saldo)}
+                  </>
+                ) : (
+                  <>
+                    <Scale className="h-5 w-5" />
+                    Cuadra exacto
+                  </>
+                )}
               </p>
             </div>
           )}

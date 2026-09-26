@@ -1,8 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Building2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { sesionActual } from "@/lib/auth";
-import { formatBs, totalesGestion, saldoGestion, resumenCampana } from "@/lib/contabilidad";
+import {
+  formatBs,
+  totalesGestion,
+  saldoGestion,
+  resumenCampana,
+  progresoCampana,
+} from "@/lib/contabilidad";
 import { CerrarGestion } from "./acciones";
 
 export const dynamic = "force-dynamic";
@@ -59,8 +66,9 @@ export default async function Panel() {
     <main className="min-h-screen bg-slate-950 text-white">
       <header className="border-b border-white/10">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
-          <Link href="/" className="text-lg font-bold">
-            🏠 Condominio El Portal
+          <Link href="/" className="flex items-center gap-2 text-lg font-bold">
+            <Building2 className="h-5 w-5 text-emerald-400" />
+            Condominio El Portal
           </Link>
           <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">
             {esResponsable ? "Responsable" : "Vecino"}
@@ -143,6 +151,21 @@ export default async function Panel() {
                     <> de {formatBs(c.resumen.meta)}</>
                   )}
                 </p>
+                {progresoCampana(c.resumen.recaudado, c.resumen.meta) !== null && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                      <span>{progresoCampana(c.resumen.recaudado, c.resumen.meta)}% pagado</span>
+                    </div>
+                    <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-slate-800">
+                      <div
+                        className="h-full rounded-full bg-emerald-500 transition-all"
+                        style={{
+                          width: `${progresoCampana(c.resumen.recaudado, c.resumen.meta)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
                 {c.resumen.gastado > 0 && (
                   <p
                     className={`text-sm font-semibold ${
