@@ -11,6 +11,7 @@ import {
 } from "@/lib/salon";
 import { CalendarioSalon } from "@/app/calendario-salon";
 import { ListaReservas } from "./lista-reservas";
+import { Pestanas } from "../pestanas";
 
 export const dynamic = "force-dynamic";
 
@@ -63,9 +64,7 @@ export default async function SalonPage() {
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto max-w-2xl px-4 py-8">
-        <a href="/panel" className="text-sm text-emerald-300 hover:underline">
-          ← Volver al panel
-        </a>
+        <Pestanas />
 
         <div className="mt-3 flex items-center justify-between gap-3">
           <h1 className="flex items-center gap-2 text-2xl font-bold">

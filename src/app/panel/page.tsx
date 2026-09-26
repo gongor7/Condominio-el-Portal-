@@ -3,14 +3,9 @@ import { redirect } from "next/navigation";
 import { Building2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { sesionActual } from "@/lib/auth";
-import {
-  formatBs,
-  totalesGestion,
-  saldoGestion,
-  resumenCampana,
-  progresoCampana,
-} from "@/lib/contabilidad";
+import { formatBs, totalesGestion, saldoGestion } from "@/lib/contabilidad";
 import { CerrarGestion } from "./acciones";
+import { Pestanas } from "./pestanas";
 
 export const dynamic = "force-dynamic";
 
@@ -18,16 +13,13 @@ export default async function Panel() {
   const sesion = await sesionActual();
   if (!sesion) redirect("/entrar");
 
-  const [{ data: gestion }, { data: campanas }] = await Promise.all([
-    supabase
-      .from("gestiones")
-      .select("*")
-      .eq("cerrada", false)
-      .order("fecha_inicio", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase.from("campanas").select("*").order("creado_en", { ascending: false }),
-  ]);
+  const { data: gestion } = await supabase
+    .from("gestiones")
+    .select("*")
+    .eq("cerrada", false)
+    .order("fecha_inicio", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   const trans = gestion
     ? (
@@ -41,24 +33,6 @@ export default async function Panel() {
 
   const totals = totalesGestion(trans ?? []);
   const saldo = saldoGestion(trans ?? [], gestion?.saldo_inicial ?? 0);
-
-  const campanasConResumen = await Promise.all(
-    (campanas ?? []).map(async (c) => {
-      const [{ data: aportes }, { data: gastos }] = await Promise.all([
-        supabase.from("aportes").select("monto").eq("campana_id", c.id),
-        supabase.from("campana_gastos").select("monto").eq("campana_id", c.id),
-      ]);
-      return {
-        ...c,
-        resumen: resumenCampana({
-          meta: c.meta,
-          estado: c.estado,
-          aportes: (aportes ?? []).map((a) => Number(a.monto)),
-          gastos: (gastos ?? []).map((g) => Number(g.monto)),
-        }),
-      };
-    })
-  );
 
   const esResponsable = sesion.rol === "responsable";
 
@@ -77,7 +51,8 @@ export default async function Panel() {
       </header>
 
       <div className="mx-auto max-w-4xl px-4 py-8">
-        <div className="flex items-center justify-between">
+        <Pestanas />
+        <div className="mt-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold">{gestion?.nombre ?? "Sin gestión activa"}</h1>
           {esResponsable && gestion && <CerrarGestion gestionId={gestion.id} />}
         </div>
@@ -110,94 +85,16 @@ export default async function Panel() {
           </div>
         </div>
 
-        {/* Campañas */}
+        {/* Campañas: acceso desde pestañas */}
         <section className="mt-10">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Campañas de recaudación</h2>
-            <div className="flex gap-2">
-              <Link
-                href="/panel/salon"
-                className="rounded-full border border-white/15 px-4 py-1.5 text-sm font-semibold hover:bg-white/10"
-              >
-                Salón de eventos
-              </Link>
-              {esResponsable && (
-                <Link
-                  href="/panel/nueva-campana"
-                  className="rounded-full bg-emerald-500 px-4 py-1.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
-                >
-                  + Nueva campaña
-                </Link>
-              )}
-            </div>
-          </div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {campanasConResumen.length === 0 && (
-              <p className="text-sm text-slate-400">
-                Aún no hay campañas activas.
-              </p>
-            )}
-            {campanasConResumen.map((c) => (
-              <Link
-                key={c.id}
-                href={`/panel/campanas/${c.id}`}
-                className="block rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:border-emerald-400/40"
-              >
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">{c.titulo}</h3>
-                  <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
-                    {c.estado}
-                  </span>
-                </div>
-                <p className="mt-1 line-clamp-2 text-sm text-slate-300">
-                  {c.descripcion}
-                </p>
-                <p className="mt-3 text-sm">
-                  Recaudado:{" "}
-                  <b className="text-emerald-400">{formatBs(c.resumen.recaudado)}</b>
-                  {c.resumen.meta !== null && (
-                    <> de {formatBs(c.resumen.meta)}</>
-                  )}
-                </p>
-                {progresoCampana(c.resumen.recaudado, c.resumen.meta) !== null && (
-                  <div className="mt-2">
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                      <span>{progresoCampana(c.resumen.recaudado, c.resumen.meta)}% pagado</span>
-                    </div>
-                    <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-slate-800">
-                      <div
-                        className="h-full rounded-full bg-emerald-500 transition-all"
-                        style={{
-                          width: `${progresoCampana(c.resumen.recaudado, c.resumen.meta)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-                {c.resumen.gastado > 0 && (
-                  <p
-                    className={`text-sm font-semibold ${
-                      c.resumen.estadoSugerido === "falta"
-                        ? "text-red-400"
-                        : "text-emerald-400"
-                    }`}
-                  >
-                    {c.resumen.estadoSugerido === "falta"
-                      ? `Faltan ${formatBs(Math.abs(c.resumen.saldo))}`
-                      : c.resumen.estadoSugerido === "sobra"
-                        ? `Sobran ${formatBs(c.resumen.saldo)}`
-                        : "Cuadra exacto"}
-                  </p>
-                )}
-                {c.resumen.faltante !== null &&
-                  c.resumen.faltante > 0 &&
-                  c.resumen.gastado === 0 && (
-                    <p className="text-sm text-amber-400">
-                      Faltan {formatBs(c.resumen.faltante)} para la meta
-                    </p>
-                  )}
-              </Link>
-            ))}
+            <Link
+              href="/panel/campanas"
+              className="rounded-full border border-white/15 px-4 py-1.5 text-sm font-semibold hover:bg-white/10"
+            >
+              Ver campañas
+            </Link>
           </div>
         </section>
 

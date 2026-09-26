@@ -1,0 +1,28 @@
+# Tareas-004 — Expensas y pestañas (orden por dependencia)
+
+- [x] T1: Tests + funciones puras `mesesPagables` y `totalEsperado` en `src/lib/expensas.ts` (RF-7, RF-9)
+  - Hecho cuando: Vitest verde para: futuro excluido, mes pagado excluido, mes sin período excluido, solo actual+atrasados; total = suma de montos distintos por mes.
+- [x] T2: Tests + funciones puras `estadosGrilla`, `totalExpensas`, `repartoMontos` y reuso de `cuadraConLibro` (RF-10, RF-11, RF-12)
+  - Hecho cuando: Vitest verde: celdas pagado/debe/sin período, total excluye anulados, sobrante/faltante prorrateado al último mes, descuadre detectado.
+- [x] T3: Migración SQL: `periodos_expensas`, `pagos_expensas`, `pagos_expensas_meses`, índice único parcial (casa_id, mes) where vigente, RPC `registrar_pago_expensas` (RF-3, RF-8, RF-10)
+  - Hecho cuando: SQL ejecutado en Supabase sin errores; doble pago misma casa+mes falla por el índice (prueba manual documentada).
+- [x] T4: Prueba E2E de la RPC en vivo: pago multi-mes con montos distintos genera N ingresos con fecha real y sobrante al último mes (RF-10, RF-11)
+  - Hecho cuando: consulta SQL muestra las filas por mes + transacciones enlazadas; datos de prueba limpiados.
+- [x] T5: Componente `Pestanas` + rutas `/panel` (Resumen) y `/panel/campanas`; el salón hereda la barra en `/panel/salon` (RF-1, RF-2)
+  - Hecho cuando: navegación entre 3 pestañas por URL funciona; el botón atrás del navegador no se pierde; build sin errores.
+- [x] T6: `GET /api/expensas` (grilla: casas + periodos + pagos) y `POST /api/expensas/periodos` (RF-3, RF-12, RF-16)
+  - Hecho cuando: curl vecino obtiene grilla; curl responsable define mes+monto; curl vecino define período → 403.
+- [x] T7: Página `/panel/expensas`: grilla casas × meses con estados, celda pagada → detalle (comprobante, fecha, monto), total del mes y deudores (RF-12, RF-13)
+  - Hecho cuando: grilla renderiza con scroll horizontal en móvil (manual) y celdas pagadas abren su comprobante.
+- [x] T8: Formulario "Pagar mi expensa": casa, meses pagables (checkboxes, pagados deshabilitados), archivo con OCR y doble comparación (OCR + total esperado) (RF-7, RF-9)
+  - Hecho cuando: flujo manual completo desde navegador; ambas advertencias exigen resolución explícita para publicar.
+- [x] T9: `POST /api/expensas/pagar` con revalidación server-side (meses pagables, duplicado 409, monto vs total esperado, `ocr_descartado`) e invocación a la RPC (RF-7, RF-8, RF-10, RF-16)
+  - Hecho cuando: E2E en vivo: pago ok (vecino), duplicado 409, mes futuro 400, responsable también puede pagar pero nadie configura sin rol.
+- [x] T10: `POST /api/expensas/[id]/anular` (motivo obligatorio; libera meses volteando `vigente`; anula ingresos; ajuste en gestión activa si la original está cerrada) (RF-14, RF-15)
+  - Hecho cuando: E2E en vivo: anulación libera meses en grilla, ingresos anulados (o egreso de ajuste si gestión cerrada), 403 para vecino.
+- [x] T11: UI responsable en Expensas: definir monto del mes (con advertencia RF-5 si ya hay pagos), administrar casas (agregar/renombrar), anular pago con motivo (RF-3, RF-4, RF-5, RF-14)
+  - Hecho cuando: flujo manual completo; renombrar casa conserva su historial en la grilla.
+- [x] T12: Quitar "expensas" del formulario manual de transacciones (RF-6)
+  - Hecho cuando: la categoría no aparece en el select y `npm test` sigue verde.
+- [x] T13: Validación final: suite completa (≥ 12 tests nuevos), lint, build, E2E del flujo completo (configurar → pagar → grilla → anular) y demo manual
+  - Hecho cuando: `npm test` y `npm run build` en verde; demo registrada en este archivo; commit y push.
