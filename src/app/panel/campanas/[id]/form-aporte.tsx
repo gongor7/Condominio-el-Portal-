@@ -5,10 +5,12 @@ import { useState } from "react";
 import { CheckCircle2, TriangleAlert, XCircle } from "lucide-react";
 import { leerComprobante } from "@/lib/ocr";
 import { compararMontos, formatBs } from "@/lib/contabilidad";
+import { SelectorCasas, useCasas, type CasaOpcion } from "@/app/selector-casas";
 
 export default function FormAporte({ campanaId }: { campanaId: string }) {
   const router = useRouter();
-  const [nombre, setNombre] = useState("");
+  const casas = useCasas();
+  const [casa, setCasa] = useState<CasaOpcion | null>(null);
   const [monto, setMonto] = useState("");
   const [montoDetectado, setMontoDetectado] = useState<number | null>(null);
   const [descartado, setDescartado] = useState(false);
@@ -65,7 +67,7 @@ export default function FormAporte({ campanaId }: { campanaId: string }) {
       const res = await fetch("/api/aportes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ campana_id: campanaId, vecino_nombre: nombre, monto: Number(monto), comprobante_url }),
+        body: JSON.stringify({ campana_id: campanaId, vecino_nombre: casa?.vecino_nombre ?? "", casa_id: casa?.id ?? null, monto: Number(monto), comprobante_url }),
       });
       const d = await res.json();
       if (!res.ok) {
@@ -73,7 +75,6 @@ export default function FormAporte({ campanaId }: { campanaId: string }) {
         return;
       }
       setOk(true);
-      setNombre("");
       setMonto("");
       setArchivo(null);
       setMontoDetectado(null);
@@ -91,13 +92,7 @@ export default function FormAporte({ campanaId }: { campanaId: string }) {
     >
       <h2 className="font-semibold">Quiero aportar</h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <input
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          required
-          placeholder="Tu nombre (ej. Casa 5 — María)"
-          className="rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm"
-        />
+        <SelectorCasas casas={casas} value={casa?.id ?? ""} onChange={setCasa} etiqueta="Tu casa" />
         <input
           value={monto}
           onChange={(e) => {

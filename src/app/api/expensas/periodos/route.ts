@@ -11,9 +11,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Solo el responsable" }, { status: 403 });
   }
 
-  const { mes, monto, confirmar } = await req.json().catch(() => ({}));
+  const { mes, monto, confirmar, fecha_limite } = await req.json().catch(() => ({}));
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(String(mes ?? ""))) {
     return NextResponse.json({ error: "Mes inválido (yyyy-mm)" }, { status: 400 });
+  }
+  const fechaLimite = typeof fecha_limite === "string" && fecha_limite ? fecha_limite : null;
+  if (fechaLimite && !/^d{4}-d{2}-d{2}$/.test(fechaLimite)) {
+    return NextResponse.json({ error: "Fecha límite inválida (yyyy-mm-dd)" }, { status: 400 });
   }
   const montoNum = Number(monto);
   if (!Number.isFinite(montoNum) || montoNum <= 0) {
@@ -59,11 +63,11 @@ export async function POST(req: NextRequest) {
   const { error } = existente
     ? await db
         .from("periodos_expensas")
-        .update({ monto: montoNum })
+        .update({ monto: montoNum, fecha_limite: fechaLimite })
         .eq("id", existente.id)
     : await db
         .from("periodos_expensas")
-        .insert({ gestion_id: gestion.id, mes, monto: montoNum });
+        .insert({ gestion_id: gestion.id, mes, monto: montoNum, fecha_limite: fechaLimite });
 
   if (error) {
     return NextResponse.json({ error: "No se pudo guardar el período" }, { status: 500 });

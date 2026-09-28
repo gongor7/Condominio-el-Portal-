@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { HeroCarrusel } from "./hero-carrusel";
 import { SalonPublico } from "./salon-publico";
+import { MultasPublico } from "./multas-publico";
 
 export const fotos = [
   { src: "/fotos/condominio-1.jpeg", alt: "Piscina del condominio El Portal" },
@@ -88,8 +89,11 @@ export default function Landing() {
               </Link>
             </p>
           </div>
-          <div className="rounded-3xl bg-gradient-to-br from-emerald-500/10 to-transparent p-1.5 shadow-2xl shadow-emerald-500/10">
-            <SalonPublico />
+          <div className="space-y-4">
+            <div className="rounded-3xl bg-gradient-to-br from-emerald-500/10 to-transparent p-1.5 shadow-2xl shadow-emerald-500/10">
+              <SalonPublico />
+            </div>
+            <MultasPublico />
           </div>
         </div>
       </section>

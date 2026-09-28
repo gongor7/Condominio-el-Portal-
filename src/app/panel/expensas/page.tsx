@@ -2,10 +2,11 @@ import { redirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase";
 import { sesionActual } from "@/lib/auth";
 import { formatBs } from "@/lib/contabilidad";
-import { estadosGrilla, totalExpensas, type PeriodoExpensa } from "@/lib/expensas";
+import { totalExpensas, type PeriodoExpensa } from "@/lib/expensas";
+import { estadoMes } from "@/lib/deudas";
+import { hoyAmericaLaPaz } from "@/lib/salon";
 import { Pestanas } from "../pestanas";
 import { GrillaExpensas } from "./grilla-expensas";
-import { ConfigExpensas } from "./config-expensas";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export default async function ExpensasPage() {
     .maybeSingle();
 
   let casas: { id: string; numero: number; vecino_nombre: string }[] = [];
-  let periodos: { id: string; mes: string; monto: string | number }[] = [];
+  let periodos: { id: string; mes: string; monto: string | number; fecha_limite: string | null }[] = [];
   let pagos: {
     id: string;
     casa_id: string;
@@ -44,7 +45,7 @@ export default async function ExpensasPage() {
         .order("numero"),
       db
         .from("periodos_expensas")
-        .select("id, mes, monto")
+        .select("id, mes, monto, fecha_limite")
         .eq("gestion_id", gestion.id)
         .order("mes"),
       db
@@ -74,11 +75,33 @@ export default async function ExpensasPage() {
     }))
   );
 
-  const grilla = estadosGrilla(
-    (casas ?? []).map((c) => c.id),
-    periodosList,
-    pagosMes
-  );
+  // Estados derivados del reloj: pagado / pagado_vencido / vencido / debe (Spec-005)
+  const pagadoEnFecha = new Map<string, string>();
+  for (const p of pagos) {
+    if (p.estado !== "vigente") continue;
+    for (const m of p.pagos_expensas_meses ?? []) {
+      if (m.vigente) pagadoEnFecha.set(`${p.casa_id}|${m.mes}`, p.fecha_pago);
+    }
+  }
+  const hoy = hoyAmericaLaPaz();
+  const grilla: Record<string, Record<string, { estado: string; monto: number }>> = {};
+  for (const casa of casas) {
+    grilla[casa.id] = {};
+    for (const per of periodos) {
+      const pagado =
+        pagosMes.find((x) => x.casa_id === casa.id && x.mes === per.mes && x.vigente)
+          ?.monto_mes ?? null;
+      grilla[casa.id][per.mes] = {
+        estado: estadoMes({
+          mes: per.mes,
+          fechaLimite: per.fecha_limite ?? null,
+          pagadoEnFecha: pagadoEnFecha.get(`${casa.id}|${per.mes}`) ?? null,
+          hoy,
+        }),
+        monto: pagado ?? Number(per.monto),
+      };
+    }
+  }
 
   const total = totalExpensas(
     pagos.map((p) => ({
@@ -119,12 +142,10 @@ export default async function ExpensasPage() {
           <p className="mt-1 text-2xl font-bold text-emerald-400">{formatBs(total)}</p>
         </div>
 
-        {esResponsable && <ConfigExpensas casas={casas} />}
-
         {periodosList.length === 0 ? (
           <p className="mt-8 text-sm text-slate-400">
             {esResponsable
-              ? "Aún no definiste el monto de ningún mes. Define el mes actual abajo."
+              ? "Aún no definiste el monto de ningún mes. Hazlo en la pestaña Casas → Configuración."
               : "El responsable todavía no definió períodos de expensa."}
           </p>
         ) : (

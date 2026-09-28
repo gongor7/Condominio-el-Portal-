@@ -11,11 +11,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  const { campana_id, vecino_nombre, monto, comprobante_url } =
+  const { campana_id, vecino_nombre, monto, comprobante_url, casa_id } =
     await req.json().catch(() => ({}));
 
-  if (typeof vecino_nombre !== "string" || !vecino_nombre.trim()) {
-    return NextResponse.json({ error: "Escribe tu nombre" }, { status: 400 });
+  let nombreFinal = typeof vecino_nombre === "string" ? vecino_nombre.trim() : "";
+  if (typeof casa_id === "string" && casa_id) {
+    const { data: casa } = await db.from("casas").select("numero, vecino_nombre").eq("id", casa_id).maybeSingle();
+    if (!casa) {
+      return NextResponse.json({ error: "Casa inválida" }, { status: 400 });
+    }
+    nombreFinal = casa.vecino_nombre;
+  }
+  if (!nombreFinal) {
+    return NextResponse.json({ error: "Elige tu casa" }, { status: 400 });
   }
   const montoNum = Number(monto);
   if (!(montoNum > 0)) {
@@ -50,7 +58,8 @@ export async function POST(req: NextRequest) {
 
   const { error } = await db.from("aportes").insert({
     campana_id,
-    vecino_nombre: vecino_nombre.trim(),
+    vecino_nombre: nombreFinal,
+    casa_id: typeof casa_id === "string" && casa_id ? casa_id : null,
     monto: montoNum,
     comprobante_url: comprobante_url ?? null,
   });

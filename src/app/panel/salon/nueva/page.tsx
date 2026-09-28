@@ -6,13 +6,15 @@ import { CheckCircle2, TriangleAlert, XCircle } from "lucide-react";
 import { leerComprobante } from "@/lib/ocr";
 import { compararMontos, formatBs } from "@/lib/contabilidad";
 import { hoyAmericaLaPaz } from "@/lib/salon";
+import { SelectorCasas, useCasas, type CasaOpcion } from "@/app/selector-casas";
 
 export default function NuevaReserva() {
   const router = useRouter();
   const hoy = hoyAmericaLaPaz();
+  const casas = useCasas();
+  const [modalidad, setModalidad] = useState<"casa" | "todos">("casa");
+  const [casa, setCasa] = useState<CasaOpcion | null>(null);
   const [fecha, setFecha] = useState("");
-  const [nombre, setNombre] = useState("");
-  const [casa, setCasa] = useState("");
   const [monto, setMonto] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
@@ -22,10 +24,10 @@ export default function NuevaReserva() {
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
-  const gratis = monto !== "" && Number(monto) === 0;
-  const comparacion = gratis
-    ? { estado: "sin_deteccion" as const, diferencia: 0 }
-    : compararMontos(monto === "" ? null : Number(monto), montoDetectado);
+  const comparacion = compararMontos(
+    monto === "" ? null : Number(monto),
+    montoDetectado
+  );
   const bloquearPorOcr =
     comparacion.estado === "difiere" && !descartado && !ocrCorriendo;
 
@@ -54,7 +56,7 @@ export default function NuevaReserva() {
     setGuardando(true);
     try {
       let comprobanteUrl: string | null = null;
-      if (archivo && !gratis) {
+      if (modalidad === "casa" && archivo) {
         const fd = new FormData();
         fd.append("archivo", archivo);
         const up = await fetch("/api/subir-archivo", { method: "POST", body: fd });
@@ -70,11 +72,13 @@ export default function NuevaReserva() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fecha,
-          vecino_nombre: nombre,
-          vecino_casa: casa,
-          monto: Number(monto),
+          casa_id: modalidad === "casa" ? casa?.id : null,
+          vecino_nombre: casa?.vecino_nombre ?? "",
+          vecino_casa: casa ? `Casa ${casa.numero}` : "",
+          monto: modalidad === "casa" ? Number(monto) : 0,
           descripcion,
           comprobante_url: comprobanteUrl,
+          modalidad,
         }),
       });
       const d = await res.json();
@@ -98,8 +102,46 @@ export default function NuevaReserva() {
           ← Volver
         </a>
         <h1 className="mt-2 text-xl font-bold">Nueva reserva del salón</h1>
-        <p className="mt-1 text-sm text-slate-300">
-          Solo reservas pagadas; monto 0 = evento comunitario gratuito.
+
+        {/* Modalidad (RF-8/RF-9) */}
+        <fieldset className="mt-4 grid grid-cols-2 gap-2 text-sm">
+          <label
+            className={`cursor-pointer rounded-lg border px-3 py-2 text-center ${
+              modalidad === "casa"
+                ? "border-emerald-400 bg-emerald-500/15"
+                : "border-white/10 bg-slate-900"
+            }`}
+          >
+            <input
+              type="radio"
+              name="modalidad"
+              className="sr-only"
+              checked={modalidad === "casa"}
+              onChange={() => setModalidad("casa")}
+            />
+            Vecino (pagada)
+          </label>
+          <label
+            className={`cursor-pointer rounded-lg border px-3 py-2 text-center ${
+              modalidad === "todos"
+                ? "border-emerald-400 bg-emerald-500/15"
+                : "border-white/10 bg-slate-900"
+            }`}
+          >
+            <input
+              type="radio"
+              name="modalidad"
+              className="sr-only"
+              checked={modalidad === "todos"}
+              onChange={() => setModalidad("todos")}
+            />
+            Contratado por todos
+          </label>
+        </fieldset>
+        <p className="mt-2 text-xs text-slate-400">
+          {modalidad === "todos"
+            ? "Evento comunitario del condominio entero: sin casa, sin pago."
+            : "Cada casa con multa impaga o expensa vencida no puede reservar."}
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
@@ -114,105 +156,100 @@ export default function NuevaReserva() {
               className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2"
             />
           </label>
-          <label className="text-sm">
-            Monto (Bs) — 0 si es gratis
-            <input
-              value={monto}
-              onChange={(e) => {
-                setMonto(e.target.value);
-                setDescartado(false);
-              }}
-              required
-              inputMode="decimal"
-              placeholder="0 para gratuita"
-              className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2"
-            />
-          </label>
-          <label className="text-sm">
-            Vecino (nombre)
-            <input
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              required
-              className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2"
-            />
-          </label>
-          <label className="text-sm">
-            Casa
-            <input
-              value={casa}
-              onChange={(e) => setCasa(e.target.value)}
-              placeholder="Ej. Casa 3"
-              className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2"
-            />
-          </label>
+          {modalidad === "casa" && (
+            <div className="text-sm">
+              <SelectorCasas
+                casas={casas}
+                value={casa?.id ?? ""}
+                onChange={setCasa}
+                etiqueta="Casa que reserva"
+              />
+            </div>
+          )}
         </div>
+
+        {modalidad === "casa" && (
+          <>
+            <label className="mt-3 block text-sm">
+              Monto (Bs)
+              <input
+                value={monto}
+                onChange={(e) => {
+                  setMonto(e.target.value);
+                  setDescartado(false);
+                }}
+                required
+                inputMode="decimal"
+                className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2"
+              />
+            </label>
+
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={alElegirArchivo}
+              className="mt-3 w-full rounded-lg border border-dashed border-white/20 bg-slate-900 p-3 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-emerald-500 file:px-3 file:py-1.5 file:font-semibold file:text-slate-950"
+            />
+            {ocrCorriendo && (
+              <p className="mt-2 animate-pulse text-sm text-emerald-300">
+                Leyendo comprobante…
+              </p>
+            )}
+
+            {montoDetectado !== null && monto !== "" && !ocrCorriendo && (
+              <div
+                className={`mt-3 flex items-start gap-3 rounded-lg px-3 py-2.5 text-sm ${
+                  comparacion.estado === "coincide"
+                    ? "bg-emerald-500/10 text-emerald-300"
+                    : descartado
+                      ? "bg-slate-500/10 text-slate-300"
+                      : "bg-amber-400/10 text-amber-300"
+                }`}
+              >
+                {comparacion.estado === "coincide" ? (
+                  <>
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                    El monto coincide con el comprobante ({formatBs(montoDetectado)}).
+                  </>
+                ) : descartado ? (
+                  <>
+                    <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    Monto del OCR descartado ({formatBs(montoDetectado)}).
+                  </>
+                ) : (
+                  <>
+                    <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>
+                      El comprobante dice {formatBs(montoDetectado)} y escribiste{" "}
+                      {formatBs(Number(monto))}.
+                      <button
+                        type="button"
+                        onClick={() => setDescartado(true)}
+                        className="ml-1 underline underline-offset-2 hover:text-amber-200"
+                      >
+                        El monto detectado está mal, continuar igual
+                      </button>
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+          </>
+        )}
 
         <label className="mt-3 block text-sm">
           Descripción del evento
           <input
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
-            placeholder="Ej. cumpleaños, reunión de vecinos"
+            placeholder={
+              modalidad === "todos"
+                ? "Ej. asamblea general de vecinos"
+                : "Ej. cumpleaños, reunión familiar"
+            }
             className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2"
           />
         </label>
-
-        {!gratis && (
-          <input
-            type="file"
-            accept="image/*,application/pdf"
-            onChange={alElegirArchivo}
-            className="mt-3 w-full rounded-lg border border-dashed border-white/20 bg-slate-900 p-3 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-emerald-500 file:px-3 file:py-1.5 file:font-semibold file:text-slate-950"
-          />
-        )}
-        {ocrCorriendo && (
-          <p className="mt-2 animate-pulse text-sm text-emerald-300">
-            Leyendo comprobante…
-          </p>
-        )}
-
-        {!gratis &&
-          montoDetectado !== null &&
-          monto !== "" &&
-          !ocrCorriendo && (
-            <div
-              className={`mt-3 flex items-start gap-3 rounded-lg px-3 py-2.5 text-sm ${
-                comparacion.estado === "coincide"
-                  ? "bg-emerald-500/10 text-emerald-300"
-                  : descartado
-                    ? "bg-slate-500/10 text-slate-300"
-                    : "bg-amber-400/10 text-amber-300"
-              }`}
-            >
-              {comparacion.estado === "coincide" ? (
-                <>
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                  El monto coincide con el comprobante ({formatBs(montoDetectado)}).
-                </>
-              ) : descartado ? (
-                <>
-                  <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  Monto del OCR descartado ({formatBs(montoDetectado)}).
-                </>
-              ) : (
-                <>
-                  <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>
-                    El comprobante dice {formatBs(montoDetectado)} y escribiste{" "}
-                    {formatBs(Number(monto))}.
-                    <button
-                      type="button"
-                      onClick={() => setDescartado(true)}
-                      className="ml-1 underline underline-offset-2 hover:text-amber-200"
-                    >
-                      El monto detectado está mal, continuar igual
-                    </button>
-                  </span>
-                </>
-              )}
-            </div>
-          )}
 
         {error && (
           <p className="mt-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">
@@ -225,13 +262,7 @@ export default function NuevaReserva() {
           disabled={guardando || ocrCorriendo || bloquearPorOcr}
           className="mt-6 w-full rounded-lg bg-emerald-500 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
         >
-          {guardando
-            ? "Guardando…"
-            : bloquearPorOcr
-              ? "Corrige el monto o confirma la discrepancia"
-              : gratis
-                ? "Crear reserva gratuita"
-                : "Crear reserva y registrar pago"}
+          {guardando ? "Guardando…" : "Crear reserva"}
         </button>
       </form>
     </main>

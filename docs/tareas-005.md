@@ -1,0 +1,32 @@
+# Tareas-005 — Multas, vencimientos y pestaña Casas (orden por dependencia)
+
+- [x] T1: Tests + funciones puras `estadoMes` y `deudasCasa` en `src/lib/deudas.ts` (RF-5, RF-7, RF-11, RF-12, RF-13)
+  - Hecho cuando: Vitest verde para los 5 estados (pagado, pagado_vencido, vencido, debe, sin período), bloqueo por multa y por mes vencido, NO bloqueo por "debe" sin límite, motivos redactados, y recálculo al cambiar fecha límite.
+- [x] T2: Tests + `totalMultas`, validación de monto completo y cuadre multas↔libro (RF-3, NFR constitución #9)
+  - Hecho cuando: Vitest verde: pago menor rechazado, pago exacto acepta, total excluye anuladas y descuadre detectado.
+- [x] T3: Migración SQL: tabla `multas`, `fecha_limite` en periodos, `casa_id`+`modalidad` en reservas, `casa_id` en aportes, RPC `pagar_multa` y `crear_reserva_con_ingreso` v2 (RF-1, RF-3, RF-8, RF-9, RF-10)
+  - Hecho cuando: SQL ejecutado en Supabase sin errores; prueba manual: pagar_multa marca pagada + genera ingreso "multas"; reserva "todos" se crea sin ingreso.
+- [x] T4: Prueba E2E de la RPC en vivo: pagar_multa atómica y reserva v2 por casa con monto 0 rechazada (RF-3, RF-8)
+  - Hecho cuando: script de prueba muestra: multa pagada + ingreso enlazado; monto 0 en modalidad casa rechazado; datos de prueba limpiados.
+- [x] T5: `POST /api/multas` (responsable, motivo obligatorio) y `GET /api/multas` público mínimo (RF-1, RF-2)
+  - Hecho cuando: curl vecino crea multa → 403; responsable crea OK; GET sin sesión devuelve solo casa/motivo/monto de impagas.
+- [x] T6: `POST /api/multas/[id]/pagar` (vecino, OCR revalidado server-side, monto completo) y `POST /api/multas/[id]/anular` (RF-3, RF-4)
+  - Hecho cuando: E2E: pagar con monto menor → 400; exacto → OK + ingreso; anular impaga exige motivo; anular pagada genera egreso de ajuste.
+- [x] T7: Bloqueo del salón: `deudasCasa` integrado en `/api/salon/crear` con 409 y motivos exactos (RF-5, RF-6)
+  - Hecho cuando: E2E: casa multada no reserva (409 con motivo), tras pagar multa reserva OK; casa con expensa vencida bloqueada, al pagarla se desbloquea.
+- [x] T8: Reserva "contratado por todos" en API y formulario del salón (RF-9)
+  - Hecho cuando: E2E: modalidad "todos" se crea sin casa/monto/ingreso y nunca bloquea; el formulario del salón ofrece ambas modalidades al responsable.
+- [x] T9: `fecha_limite` en períodos: API expensas/periodos extendida y grilla distingue debe/vencido/pagado(vencido) (RF-10, RF-11, RF-12)
+  - Hecho cuando: al definir período con fecha límite pasada queda vencido de inmediato; la grilla de Expensas muestra los 4 estados distinguibles.
+- [x] T10: Pestaña `/panel/casas`: lista con resumen (multas impagas, meses vencidos) y detalle por casa (RF-14)
+  - Hecho cuando: página muestra las 24 casas con estado; el detalle por casa lista períodos con estado, multas e historial.
+- [x] T11: Admin en Casas: multar, anular multa y configuración de expensas mudada (períodos con fecha límite + admin casas) (RF-1, RF-15)
+  - Hecho cuando: responsable multa desde la pestaña; config de expensas ya no aparece en Expensas y funciona desde Casas.
+- [x] T12: Pago de multa del vecino: formulario con OCR y selector desde la pestaña Casas (RF-3)
+  - Hecho cuando: flujo manual completo desde Casas: pagar multa con comprobante (foto o PDF), monto completo, la multa queda pagada.
+- [x] T13: Componente `SelectorCasas` aplicado a reserva de salón y aporte de campaña; aportes guardan casa_id (RF-16, RF-17)
+  - Hecho cuando: los 4 formularios usan la lista de casas (salón, aporte, expensa, multa); un aporte nuevo queda vinculado a la casa; sin casas registradas avisa.
+- [x] T14: Landing: sección pública de multas impagas (RF-2)
+  - Hecho cuando: sin sesión la landing muestra casa+motivo+monto de multas impagas (incluye gestiones anteriores).
+- [x] T15: Validación final: suite completa (≥ 12 tests nuevos), lint, build, E2E del ciclo multar→bloquear→pagar→desbloquear, commit y push (todos los RF)
+  - Hecho cuando: `npm test` y `npm run build` en verde; demo E2E registrada aquí; todo subido a GitHub.

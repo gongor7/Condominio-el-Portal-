@@ -26,7 +26,7 @@ function mesCorto(mes: string): string {
   return MESES_CORTOS[m - 1] ?? mes;
 }
 
-/** RF-12/RF-13: grilla casas × meses; celda pagada abre detalle. */
+/** RF-12/RF-13 (Spec-005): grilla casas × meses con 4 estados; celda pagada abre detalle. */
 export function GrillaExpensas({
   casas,
   periodos,
@@ -35,8 +35,8 @@ export function GrillaExpensas({
   esResponsable,
 }: {
   casas: Casa[];
-  periodos: { mes: string; monto: number }[];
-  grilla: Record<string, Record<string, { estado: "pagado" | "debe"; monto: number }>>;
+  periodos: { mes: string; monto: number; fecha_limite?: string | null }[];
+  grilla: Record<string, Record<string, { estado: string; monto: number }>>;
   pagosPorCasaMes: Record<string, Record<string, PagoDetalle>>;
   esResponsable: boolean;
 }) {
@@ -50,9 +50,12 @@ export function GrillaExpensas({
   for (const casa of casas) {
     for (const { mes } of periodos) {
       const c = grilla[casa.id]?.[mes];
-      if (c?.estado === "pagado") totalPorMes[mes] += c.monto;
+      if (c && (c.estado === "pagado" || c.estado === "pagado_vencido")) {
+        totalPorMes[mes] += c.monto;
+      }
     }
-    if (ultimoMes && grilla[casa.id]?.[ultimoMes]?.estado === "debe") {
+    const est = ultimoMes ? grilla[casa.id]?.[ultimoMes]?.estado : null;
+    if (ultimoMes && (est === "debe" || est === "vencido")) {
       deudoresUltimo.push(casa);
     }
   }
@@ -86,21 +89,39 @@ export function GrillaExpensas({
                 {periodos.map((p) => {
                   const celda = grilla[casa.id]?.[p.mes];
                   const pago = pagosPorCasaMes[casa.id]?.[p.mes];
-                  if (celda?.estado === "pagado" && pago) {
+                  const estado = celda?.estado ?? "debe";
+                  if ((estado === "pagado" || estado === "pagado_vencido") && pago) {
                     return (
                       <td key={p.mes} className="px-2 py-2 text-center">
                         <button
                           onClick={() => setDetalle({ casa, mes: p.mes, pago })}
-                          className="w-full rounded-lg bg-emerald-500/15 px-2 py-1 text-xs font-semibold text-emerald-300 ring-1 ring-inset ring-emerald-500/30 hover:bg-emerald-500/25"
+                          title={estado === "pagado_vencido" ? "Pagó después de la fecha límite" : undefined}
+                          className={`w-full rounded-lg px-2 py-1 text-xs font-semibold ring-1 ring-inset ${
+                            estado === "pagado"
+                              ? "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30 hover:bg-emerald-500/25"
+                              : "bg-emerald-500/10 text-emerald-400/80 ring-emerald-500/20 hover:bg-emerald-500/20"
+                          }`}
                         >
-                          pagado
+                          {estado === "pagado_vencido" ? "pagó tarde" : "pagado"}
                         </button>
+                      </td>
+                    );
+                  }
+                  if (estado === "vencido") {
+                    return (
+                      <td key={p.mes} className="px-2 py-2 text-center">
+                        <span
+                          title={`Venció el ${p.fecha_limite}`}
+                          className="inline-block w-full rounded-lg bg-red-500/25 px-2 py-1 text-xs font-bold text-red-300 ring-1 ring-inset ring-red-500/50"
+                        >
+                          vencido
+                        </span>
                       </td>
                     );
                   }
                   return (
                     <td key={p.mes} className="px-2 py-2 text-center">
-                      <span className="inline-block w-full rounded-lg bg-red-500/10 px-2 py-1 text-xs font-semibold text-red-300">
+                      <span className="inline-block w-full rounded-lg bg-slate-500/10 px-2 py-1 text-xs font-semibold text-slate-400">
                         debe
                       </span>
                     </td>

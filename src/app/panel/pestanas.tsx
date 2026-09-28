@@ -8,6 +8,7 @@ const PESTANAS = [
   { href: "/panel/campanas", label: "Campañas" },
   { href: "/panel/salon", label: "Salón" },
   { href: "/panel/expensas", label: "Expensas" },
+  { href: "/panel/casas", label: "Casas" },
 ];
 
 /** RF-1/RF-2: pestañas del panel, cada una con su ruta propia. */
@@ -24,6 +25,7 @@ export function Pestanas() {
           <Link
             key={t.href}
             href={t.href}
+            prefetch={false}
             className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition ${
               activa
                 ? "bg-emerald-500 text-slate-950"

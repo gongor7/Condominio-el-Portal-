@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, TriangleAlert, XCircle } from "lucide-react";
-import { leerComprobante } from "@/lib/ocr";
+import { CheckCircle2, Eye, FileText, TriangleAlert, X, XCircle } from "lucide-react";
+import { leerComprobante, optimizarImagenParaOcr } from "@/lib/ocr";
 import { compararMontos, formatBs } from "@/lib/contabilidad";
 import { mesesPagables, totalEsperado } from "@/lib/expensas";
 
@@ -39,11 +39,12 @@ export default function PagarExpensa() {
   const router = useRouter();
   const [casas, setCasas] = useState<Casa[]>([]);
   const [periodos, setPeriodos] = useState<{ mes: string; monto: number }[]>([]);
-  const [pagados, setPagados] = useState<string[]>([]);
+  
   const [casaId, setCasaId] = useState("");
   const [meses, setMeses] = useState<string[]>([]);
   const [monto, setMonto] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [montoDetectado, setMontoDetectado] = useState<number | null>(null);
   const [ocrDescartado, setOcrDescartado] = useState(false);
   const [difConfirmada, setDifConfirmada] = useState(false);
@@ -52,34 +53,42 @@ export default function PagarExpensa() {
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const [todosLosPagos, setTodosLosPagos] = useState<
+    {
+      casa_id: string;
+      estado: string;
+      pagos_expensas_meses: { mes: string; vigente: boolean }[];
+    }[]
+  >([]);
+
+  useEffect(() => {
     fetch("/api/expensas")
       .then((r) => r.json())
       .then((d) => {
         setCasas(d.casas ?? []);
         setPeriodos(d.periodos ?? []);
-        // meses ya pagados por cualquier casa no importa: se recalcula al elegir casa
+        setTodosLosPagos(d.pagos ?? []);
       })
       .catch(() => {});
   }, []);
 
-  // Al elegir casa, cargar sus meses pagados
-  useEffect(() => {
-    if (!casaId) return;
-    fetch("/api/expensas")
-      .then((r) => r.json())
-      .then((d) => {
-        const pagadosDeCasa: string[] = [];
-        for (const p of d.pagos ?? []) {
-          if (p.casa_id !== casaId || p.estado !== "vigente") continue;
-          for (const m of p.pagos_expensas_meses ?? []) {
-            if (m.vigente) pagadosDeCasa.push(m.mes);
-          }
-        }
-        setPagados(pagadosDeCasa);
-        setMeses((prev) => prev.filter((m) => !pagadosDeCasa.includes(m)));
-      })
-      .catch(() => {});
-  }, [casaId]);
+  // Al elegir casa, calcular sus meses pagados en memoria al instante (derivado, sin efecto)
+  const pagados = useMemo(() => {
+    if (!casaId) return [] as string[];
+    const res: string[] = [];
+    for (const p of todosLosPagos) {
+      if (p.casa_id !== casaId || p.estado !== "vigente") continue;
+      for (const m of p.pagos_expensas_meses ?? []) {
+        if (m.vigente) res.push(m.mes);
+      }
+    }
+    return res;
+  }, [casaId, todosLosPagos]);
 
   const pagables = useMemo(
     () => mesesPagables(mesActual(), periodos, pagados),
@@ -97,8 +106,32 @@ export default function PagarExpensa() {
     ocrCorriendo ||
     meses.length === 0 ||
     !casaId ||
+    !archivo ||
+    !monto ||
+    Number(monto) <= 0 ||
     (comparacionOcr.estado === "difiere" && !ocrDescartado) ||
     (difiereTotal && !difConfirmada);
+
+  let avisoBloqueo: string | null = null;
+  if (!casaId) {
+    avisoBloqueo = "Selecciona tu casa para ver los meses pendientes.";
+  } else if (periodos.length === 0) {
+    avisoBloqueo = "No hay períodos definidos por la administración aún.";
+  } else if (pagables.length === 0) {
+    avisoBloqueo = "Tu casa no tiene meses pendientes de pago.";
+  } else if (meses.length === 0) {
+    avisoBloqueo = "Marca en la lista al menos un mes a pagar.";
+  } else if (!monto || Number(monto) <= 0) {
+    avisoBloqueo = "Escribe el monto pagado en bolivianos.";
+  } else if (!archivo) {
+    avisoBloqueo = "Adjunta la imagen o PDF del comprobante de pago.";
+  } else if (ocrCorriendo) {
+    avisoBloqueo = "Leyendo el comprobante...";
+  } else if (comparacionOcr.estado === "difiere" && !ocrDescartado) {
+    avisoBloqueo = "El monto escrito difiere del comprobante (resuelve la advertencia para continuar).";
+  } else if (difiereTotal && !difConfirmada) {
+    avisoBloqueo = "El monto difiere del total esperado (confirma la diferencia para continuar).";
+  }
 
   function toggleMes(m: string) {
     setMeses((prev) =>
@@ -111,6 +144,8 @@ export default function PagarExpensa() {
     const f = e.target.files?.[0];
     if (!f) return;
     setArchivo(f);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(URL.createObjectURL(f));
     setMontoDetectado(null);
     setOcrDescartado(false);
     setError(null);
@@ -126,6 +161,14 @@ export default function PagarExpensa() {
     }
   }
 
+  function quitarArchivo() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setArchivo(null);
+    setMontoDetectado(null);
+    setOcrDescartado(false);
+  }
+
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -133,8 +176,12 @@ export default function PagarExpensa() {
     try {
       let comprobante_url: string | null = null;
       if (archivo) {
+        let archivoParaSubir: File | Blob = archivo;
+        if (archivo.type.startsWith("image/") && archivo.size > 1.5 * 1024 * 1024) {
+          archivoParaSubir = await optimizarImagenParaOcr(archivo);
+        }
         const fd = new FormData();
-        fd.append("archivo", archivo);
+        fd.append("archivo", archivoParaSubir, archivo.name);
         const up = await fetch("/api/subir-archivo", { method: "POST", body: fd });
         const upd = await up.json();
         if (!up.ok) {
@@ -148,7 +195,7 @@ export default function PagarExpensa() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           casa_id: casaId,
-          meses,
+          meses: meses.filter((m) => pagables.includes(m)),
           monto: Number(monto),
           comprobante_url,
           ocr_descartado: ocrDescartado,
@@ -200,32 +247,48 @@ export default function PagarExpensa() {
 
         {casaId && (
           <fieldset className="mt-4">
-            <legend className="text-sm font-medium">Meses a pagar</legend>
-            {pagables.length === 0 ? (
+            <legend className="text-sm font-medium">
+              ¿Qué mes(es) estás pagando? <span className="text-red-400">*</span>
+            </legend>
+            <p className="mt-0.5 text-xs text-slate-400">
+              Marca las casillas de los meses que cubre tu pago (puedes pagar varios meses juntos):
+            </p>
+            {periodos.length === 0 ? (
+              <p className="mt-2 rounded-lg bg-amber-500/10 p-3 text-sm text-amber-300">
+                ⚠️ <b>No hay períodos configurados:</b> La administración aún no ha definido el monto de expensas para ningún mes en el panel de Expensas. El responsable debe definir los períodos primero.
+              </p>
+            ) : pagables.length === 0 ? (
               <p className="mt-2 text-sm text-slate-400">
                 No tienes meses pendientes. ¡Todo al día!
               </p>
             ) : (
               <div className="mt-2 space-y-1.5">
-                {pagables.map((m) => (
-                  <label
-                    key={m}
-                    className="flex items-center justify-between rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm"
-                  >
-                    <span className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={meses.includes(m)}
-                        onChange={() => toggleMes(m)}
-                        className="h-4 w-4 accent-emerald-500"
-                      />
-                      {mesLargo(m)}
-                    </span>
-                    <span className="text-slate-400">
-                      {formatBs(periodos.find((p) => p.mes === m)?.monto ?? 0)}
-                    </span>
-                  </label>
-                ))}
+                {pagables.map((m) => {
+                  const seleccionado = meses.includes(m);
+                  return (
+                    <label
+                      key={m}
+                      className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2 text-sm transition ${
+                        seleccionado
+                          ? "border-emerald-500/60 bg-emerald-500/10 text-emerald-200"
+                          : "border-white/10 bg-slate-900 text-slate-300 hover:bg-slate-800"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={seleccionado}
+                          onChange={() => toggleMes(m)}
+                          className="h-4 w-4 rounded accent-emerald-500"
+                        />
+                        <span className="font-medium capitalize">{mesLargo(m)}</span>
+                      </span>
+                      <span className="text-slate-400">
+                        {formatBs(periodos.find((p) => p.mes === m)?.monto ?? 0)}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             )}
           </fieldset>
@@ -239,7 +302,7 @@ export default function PagarExpensa() {
         )}
 
         <label className="mt-4 block text-sm">
-          Monto pagado (Bs)
+          Monto pagado (Bs) <span className="text-red-400">*</span>
           <input
             value={monto}
             onChange={(e) => {
@@ -249,19 +312,80 @@ export default function PagarExpensa() {
             }}
             required
             inputMode="decimal"
+            placeholder="Ej. 150"
             className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2"
           />
         </label>
 
-        <input
-          type="file"
-          accept="image/*,application/pdf"
-          onChange={alElegirArchivo}
-          className="mt-3 w-full rounded-lg border border-dashed border-white/20 bg-slate-900 p-3 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-emerald-500 file:px-3 file:py-1.5 file:font-semibold file:text-slate-950"
-        />
+        {!archivo ? (
+          <label className="mt-4 block text-sm">
+            Comprobante (foto o PDF) <span className="text-red-400">*</span>
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              required
+              onChange={alElegirArchivo}
+              className="mt-1 w-full cursor-pointer rounded-lg border border-dashed border-white/20 bg-slate-900 p-3 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-emerald-500 file:px-3 file:py-1.5 file:font-semibold file:text-slate-950 hover:border-emerald-500/50"
+            />
+          </label>
+        ) : (
+          <div className="mt-4 rounded-xl border border-white/10 bg-slate-900/90 p-3">
+            <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2 text-xs">
+              <span className="flex items-center gap-1.5 truncate font-medium text-slate-200">
+                <FileText className="h-4 w-4 shrink-0 text-emerald-400" />
+                <span className="truncate">{archivo.name}</span>
+                <span className="text-slate-400">
+                  ({(archivo.size / 1024).toFixed(1)} KB)
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={quitarArchivo}
+                className="flex shrink-0 items-center gap-1 text-xs text-red-400 hover:text-red-300 hover:underline"
+              >
+                <X className="h-3.5 w-3.5" /> Cambiar comprobante
+              </button>
+            </div>
+
+            {/* Vista previa de imagen o PDF */}
+            <div className="mt-2.5">
+              {archivo.type.startsWith("image/") && previewUrl && (
+                <div className="flex max-h-80 items-center justify-center overflow-hidden rounded-lg border border-white/5 bg-black/40 p-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previewUrl}
+                    alt="Previsualización del comprobante"
+                    className="max-h-80 w-auto rounded object-contain"
+                  />
+                </div>
+              )}
+
+              {archivo.type === "application/pdf" && previewUrl && (
+                <div className="overflow-hidden rounded-lg border border-white/10 bg-slate-950">
+                  <iframe
+                    src={previewUrl}
+                    title="Previsualización del comprobante PDF"
+                    className="h-80 w-full rounded-t-lg"
+                  />
+                  <div className="border-t border-white/5 bg-slate-900/90 p-2 text-center text-xs">
+                    <a
+                      href={previewUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-emerald-400 underline underline-offset-2 hover:text-emerald-300"
+                    >
+                      <Eye className="h-3.5 w-3.5" /> Abrir PDF en pantalla completa ↗
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {ocrCorriendo && (
           <p className="mt-2 animate-pulse text-sm text-emerald-300">
-            Leyendo comprobante…
+            Leyendo comprobante con OCR…
           </p>
         )}
 
@@ -333,10 +457,16 @@ export default function PagarExpensa() {
           </p>
         )}
 
+        {bloquear && avisoBloqueo && !enviando && (
+          <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+            {avisoBloqueo}
+          </div>
+        )}
+
         <button
           type="submit"
           disabled={bloquear}
-          className="mt-6 w-full rounded-lg bg-emerald-500 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+          className="mt-4 w-full rounded-lg bg-emerald-500 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
         >
           {enviando
             ? "Registrando…"

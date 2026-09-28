@@ -13,6 +13,7 @@ export function ConfigExpensas({
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
   const [mes, setMes] = useState("");
+  const [limite, setLimite] = useState("");
   const [monto, setMonto] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [nuevoNum, setNuevoNum] = useState("");
@@ -23,7 +24,7 @@ export function ConfigExpensas({
     const res = await fetch("/api/expensas/periodos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mes, monto: Number(monto), confirmar: false }),
+      body: JSON.stringify({ mes, monto: Number(monto), confirmar: false, fecha_limite: limite || null }),
     });
     const d = await res.json();
     if (!res.ok) {
@@ -72,6 +73,13 @@ export function ConfigExpensas({
               type="month"
               value={mes}
               onChange={(e) => setMes(e.target.value)}
+              className="rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm"
+            />
+            <input
+              value={limite}
+              onChange={(e) => setLimite(e.target.value)}
+              type="date"
+              title="Fecha límite de pago"
               className="rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm"
             />
             <input

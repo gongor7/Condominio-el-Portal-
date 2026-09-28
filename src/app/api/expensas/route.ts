@@ -26,7 +26,7 @@ export async function GET() {
     db.from("casas").select("id, numero, vecino_nombre").eq("activo", true).order("numero"),
     db
       .from("periodos_expensas")
-      .select("id, mes, monto")
+      .select("id, mes, monto, fecha_limite")
       .eq("gestion_id", gestion.id)
       .order("mes"),
     db

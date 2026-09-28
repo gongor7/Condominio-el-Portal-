@@ -12,28 +12,36 @@ export default async function CampanasPage() {
   if (!sesion) redirect("/entrar");
   const esResponsable = sesion.rol === "responsable";
 
-  const { data: campanas } = await supabase
-    .from("campanas")
-    .select("*")
-    .order("creado_en", { ascending: false });
+  const [{ data: campanas }, { data: todosAportes }, { data: todosGastos }] =
+    await Promise.all([
+      supabase.from("campanas").select("*").order("creado_en", { ascending: false }),
+      supabase.from("aportes").select("campana_id, monto"),
+      supabase.from("campana_gastos").select("campana_id, monto"),
+    ]);
 
-  const campanasConResumen = await Promise.all(
-    (campanas ?? []).map(async (c) => {
-      const [{ data: aportes }, { data: gastos }] = await Promise.all([
-        supabase.from("aportes").select("monto").eq("campana_id", c.id),
-        supabase.from("campana_gastos").select("monto").eq("campana_id", c.id),
-      ]);
-      return {
-        ...c,
-        resumen: resumenCampana({
-          meta: c.meta,
-          estado: c.estado,
-          aportes: (aportes ?? []).map((a) => Number(a.monto)),
-          gastos: (gastos ?? []).map((g) => Number(g.monto)),
-        }),
-      };
-    })
-  );
+  const aportesPorCampana = new Map<string, number[]>();
+  for (const a of todosAportes ?? []) {
+    const list = aportesPorCampana.get(a.campana_id) ?? [];
+    list.push(Number(a.monto));
+    aportesPorCampana.set(a.campana_id, list);
+  }
+
+  const gastosPorCampana = new Map<string, number[]>();
+  for (const g of todosGastos ?? []) {
+    const list = gastosPorCampana.get(g.campana_id) ?? [];
+    list.push(Number(g.monto));
+    gastosPorCampana.set(g.campana_id, list);
+  }
+
+  const campanasConResumen = (campanas ?? []).map((c) => ({
+    ...c,
+    resumen: resumenCampana({
+      meta: c.meta,
+      estado: c.estado,
+      aportes: aportesPorCampana.get(c.id) ?? [],
+      gastos: gastosPorCampana.get(c.id) ?? [],
+    }),
+  }));
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
