@@ -6,7 +6,6 @@ import {
   validarTransaccion,
   formatBs,
 } from "../src/lib/contabilidad";
-import { extraerMonto, extraerFecha } from "../src/lib/ocr";
 
 describe("saldoGestion", () => {
   it("calcula ingresos − egresos con saldo inicial", () => {
@@ -98,30 +97,3 @@ describe("formatBs", () => {
   });
 });
 
-describe("OCR: extraerMonto / extraerFecha", () => {
-  it("extrae monto con formato boliviano", () => {
-    expect(extraerMonto("TOTAL 1.250,50 Bs")).toBe(1250.5);
-  });
-
-  it("extrae monto decimal simple", () => {
-    expect(extraerMonto("monto: 350.00")).toBe(350);
-  });
-
-  it("sin monto devuelve null", () => {
-    expect(extraerMonto("sin números útiles aquí")).toBeNull();
-  });
-
-  it("extrae fecha yyyy-mm-dd", () => {
-    expect(extraerFecha("Fecha: 2026-09-15")).toBe("2026-09-15");
-  });
-
-  it("extrae fecha dd/mm/yyyy", () => {
-    expect(extraerFecha("15/09/2026")).toBe("2026-09-15");
-  });
-
-  it("extrae fecha en palabras", () => {
-    expect(extraerFecha("Cochabamba, 3 de septiembre de 2026")).toBe(
-      "2026-09-03"
-    );
-  });
-});

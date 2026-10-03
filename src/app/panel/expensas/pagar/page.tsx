@@ -2,9 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Eye, FileText, TriangleAlert, X, XCircle } from "lucide-react";
-import { leerComprobante, optimizarImagenParaOcr } from "@/lib/ocr";
-import { compararMontos, formatBs } from "@/lib/contabilidad";
+import { Eye, FileText, TriangleAlert, X } from "lucide-react";
+import { formatBs } from "@/lib/contabilidad";
 import { mesesPagables, totalEsperado } from "@/lib/expensas";
 
 interface Casa {
@@ -45,10 +44,7 @@ export default function PagarExpensa() {
   const [monto, setMonto] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [montoDetectado, setMontoDetectado] = useState<number | null>(null);
-  const [ocrDescartado, setOcrDescartado] = useState(false);
   const [difConfirmada, setDifConfirmada] = useState(false);
-  const [ocrCorriendo, setOcrCorriendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -97,19 +93,16 @@ export default function PagarExpensa() {
   const esperado = meses.length > 0 ? totalEsperado(meses, periodos) : null;
   const montoNum = monto === "" ? null : Number(monto);
 
-  const comparacionOcr = compararMontos(montoNum, montoDetectado);
   const difiereTotal =
     esperado !== null && montoNum !== null && Math.abs(esperado - montoNum) > 0.01;
 
   const bloquear =
     enviando ||
-    ocrCorriendo ||
     meses.length === 0 ||
     !casaId ||
     !archivo ||
     !monto ||
     Number(monto) <= 0 ||
-    (comparacionOcr.estado === "difiere" && !ocrDescartado) ||
     (difiereTotal && !difConfirmada);
 
   let avisoBloqueo: string | null = null;
@@ -125,10 +118,7 @@ export default function PagarExpensa() {
     avisoBloqueo = "Escribe el monto pagado en bolivianos.";
   } else if (!archivo) {
     avisoBloqueo = "Adjunta la imagen o PDF del comprobante de pago.";
-  } else if (ocrCorriendo) {
-    avisoBloqueo = "Leyendo el comprobante...";
-  } else if (comparacionOcr.estado === "difiere" && !ocrDescartado) {
-    avisoBloqueo = "El monto escrito difiere del comprobante (resuelve la advertencia para continuar).";
+  } else if (difiereTotal && !difConfirmada) {
   } else if (difiereTotal && !difConfirmada) {
     avisoBloqueo = "El monto difiere del total esperado (confirma la diferencia para continuar).";
   }
@@ -140,34 +130,15 @@ export default function PagarExpensa() {
     setDifConfirmada(false);
   }
 
-  async function alElegirArchivo(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setArchivo(f);
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(URL.createObjectURL(f));
-    setMontoDetectado(null);
-    setOcrDescartado(false);
-    setError(null);
-    setOcrCorriendo(true);
-    try {
-      const r = await leerComprobante(f);
-      setMontoDetectado(r.monto);
-      if (r.monto !== null) setMonto(String(r.monto));
-    } catch {
-      setError("No se pudo leer el comprobante. Escribe el monto a mano.");
-    } finally {
-      setOcrCorriendo(false);
-    }
+  function alElegirArchivo(e: React.ChangeEvent<HTMLInputElement>) {
+    setArchivo(e.target.files?.[0] ?? null);
   }
 
   function quitarArchivo() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setArchivo(null);
-    setMontoDetectado(null);
-    setOcrDescartado(false);
-  }
+    }
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -176,12 +147,8 @@ export default function PagarExpensa() {
     try {
       let comprobante_url: string | null = null;
       if (archivo) {
-        let archivoParaSubir: File | Blob = archivo;
-        if (archivo.type.startsWith("image/") && archivo.size > 1.5 * 1024 * 1024) {
-          archivoParaSubir = await optimizarImagenParaOcr(archivo);
-        }
         const fd = new FormData();
-        fd.append("archivo", archivoParaSubir, archivo.name);
+        fd.append("archivo", archivo);
         const up = await fetch("/api/subir-archivo", { method: "POST", body: fd });
         const upd = await up.json();
         if (!up.ok) {
@@ -198,7 +165,7 @@ export default function PagarExpensa() {
           meses: meses.filter((m) => pagables.includes(m)),
           monto: Number(monto),
           comprobante_url,
-          ocr_descartado: ocrDescartado,
+          ocr_descartado: false,
           confirmar_diferencia: difConfirmada,
         }),
       });
@@ -308,8 +275,7 @@ export default function PagarExpensa() {
             onChange={(e) => {
               setMonto(e.target.value);
               setDifConfirmada(false);
-              setOcrDescartado(false);
-            }}
+              }}
             required
             inputMode="decimal"
             placeholder="Ej. 150"
@@ -383,51 +349,7 @@ export default function PagarExpensa() {
           </div>
         )}
 
-        {ocrCorriendo && (
-          <p className="mt-2 animate-pulse text-sm text-emerald-300">
-            Leyendo comprobante con OCR…
-          </p>
-        )}
 
-        {/* Validación OCR (RF-9) */}
-        {montoDetectado !== null && monto !== "" && !ocrCorriendo && (
-          <div
-            className={`mt-3 flex items-start gap-3 rounded-lg px-3 py-2.5 text-sm ${
-              comparacionOcr.estado === "coincide"
-                ? "bg-emerald-500/10 text-emerald-300"
-                : ocrDescartado
-                  ? "bg-slate-500/10 text-slate-300"
-                  : "bg-amber-400/10 text-amber-300"
-            }`}
-          >
-            {comparacionOcr.estado === "coincide" ? (
-              <>
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                El monto coincide con el comprobante ({formatBs(montoDetectado)}).
-              </>
-            ) : ocrDescartado ? (
-              <>
-                <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                Monto del OCR descartado ({formatBs(montoDetectado)}).
-              </>
-            ) : (
-              <>
-                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>
-                  El comprobante dice {formatBs(montoDetectado)} y escribiste{" "}
-                  {formatBs(Number(monto))}.{" "}
-                  <button
-                    type="button"
-                    onClick={() => setOcrDescartado(true)}
-                    className="underline underline-offset-2 hover:text-amber-200"
-                  >
-                    El OCR está mal, continuar igual
-                  </button>
-                </span>
-              </>
-            )}
-          </div>
-        )}
 
         {/* Validación contra el total esperado (RF-9) */}
         {difiereTotal && (

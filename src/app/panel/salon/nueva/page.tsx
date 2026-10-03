@@ -2,9 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CheckCircle2, TriangleAlert, XCircle } from "lucide-react";
-import { leerComprobante } from "@/lib/ocr";
-import { compararMontos, formatBs } from "@/lib/contabilidad";
 import { hoyAmericaLaPaz } from "@/lib/salon";
 import { SelectorCasas, useCasas, type CasaOpcion } from "@/app/selector-casas";
 
@@ -18,36 +15,11 @@ export default function NuevaReserva() {
   const [monto, setMonto] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
-  const [montoDetectado, setMontoDetectado] = useState<number | null>(null);
-  const [descartado, setDescartado] = useState(false);
-  const [ocrCorriendo, setOcrCorriendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
-  const comparacion = compararMontos(
-    monto === "" ? null : Number(monto),
-    montoDetectado
-  );
-  const bloquearPorOcr =
-    comparacion.estado === "difiere" && !descartado && !ocrCorriendo;
-
-  async function alElegirArchivo(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setArchivo(f);
-    setMontoDetectado(null);
-    setDescartado(false);
-    setError(null);
-    setOcrCorriendo(true);
-    try {
-      const r = await leerComprobante(f);
-      setMontoDetectado(r.monto);
-      if (r.monto !== null) setMonto(String(r.monto));
-    } catch {
-      setError("No se pudo leer el comprobante. Completa el monto a mano.");
-    } finally {
-      setOcrCorriendo(false);
-    }
+  function alElegirArchivo(e: React.ChangeEvent<HTMLInputElement>) {
+    setArchivo(e.target.files?.[0] ?? null);
   }
 
   async function guardar(e: React.FormEvent) {
@@ -176,8 +148,7 @@ export default function NuevaReserva() {
                 value={monto}
                 onChange={(e) => {
                   setMonto(e.target.value);
-                  setDescartado(false);
-                }}
+                              }}
                 required
                 inputMode="decimal"
                 className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2"
@@ -190,50 +161,6 @@ export default function NuevaReserva() {
               onChange={alElegirArchivo}
               className="mt-3 w-full rounded-lg border border-dashed border-white/20 bg-slate-900 p-3 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-emerald-500 file:px-3 file:py-1.5 file:font-semibold file:text-slate-950"
             />
-            {ocrCorriendo && (
-              <p className="mt-2 animate-pulse text-sm text-emerald-300">
-                Leyendo comprobante…
-              </p>
-            )}
-
-            {montoDetectado !== null && monto !== "" && !ocrCorriendo && (
-              <div
-                className={`mt-3 flex items-start gap-3 rounded-lg px-3 py-2.5 text-sm ${
-                  comparacion.estado === "coincide"
-                    ? "bg-emerald-500/10 text-emerald-300"
-                    : descartado
-                      ? "bg-slate-500/10 text-slate-300"
-                      : "bg-amber-400/10 text-amber-300"
-                }`}
-              >
-                {comparacion.estado === "coincide" ? (
-                  <>
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                    El monto coincide con el comprobante ({formatBs(montoDetectado)}).
-                  </>
-                ) : descartado ? (
-                  <>
-                    <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                    Monto del OCR descartado ({formatBs(montoDetectado)}).
-                  </>
-                ) : (
-                  <>
-                    <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>
-                      El comprobante dice {formatBs(montoDetectado)} y escribiste{" "}
-                      {formatBs(Number(monto))}.
-                      <button
-                        type="button"
-                        onClick={() => setDescartado(true)}
-                        className="ml-1 underline underline-offset-2 hover:text-amber-200"
-                      >
-                        El monto detectado está mal, continuar igual
-                      </button>
-                    </span>
-                  </>
-                )}
-              </div>
-            )}
           </>
         )}
 
@@ -259,7 +186,7 @@ export default function NuevaReserva() {
 
         <button
           type="submit"
-          disabled={guardando || ocrCorriendo || bloquearPorOcr}
+          disabled={guardando}
           className="mt-6 w-full rounded-lg bg-emerald-500 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
         >
           {guardando ? "Guardando…" : "Crear reserva"}

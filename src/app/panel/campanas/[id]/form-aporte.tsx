@@ -2,9 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CheckCircle2, TriangleAlert, XCircle } from "lucide-react";
-import { leerComprobante } from "@/lib/ocr";
-import { compararMontos, formatBs } from "@/lib/contabilidad";
 import { SelectorCasas, useCasas, type CasaOpcion } from "@/app/selector-casas";
 
 export default function FormAporte({ campanaId }: { campanaId: string }) {
@@ -12,39 +9,13 @@ export default function FormAporte({ campanaId }: { campanaId: string }) {
   const casas = useCasas();
   const [casa, setCasa] = useState<CasaOpcion | null>(null);
   const [monto, setMonto] = useState("");
-  const [montoDetectado, setMontoDetectado] = useState<number | null>(null);
-  const [descartado, setDescartado] = useState(false);
   const [archivo, setArchivo] = useState<File | null>(null);
-  const [ocrCorriendo, setOcrCorriendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const [enviando, setEnviando] = useState(false);
 
-  // Spec-002 RF-4: comparación en vivo monto escrito vs OCR
-  const comparacion = compararMontos(
-    monto === "" ? null : Number(monto),
-    montoDetectado
-  );
-  const bloquearPorOcr =
-    comparacion.estado === "difiere" && !descartado && !ocrCorriendo;
-
-  async function alElegirArchivo(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setArchivo(f);
-    setMontoDetectado(null);
-    setDescartado(false);
-    setOcrCorriendo(true);
-    setError(null);
-    try {
-      const r = await leerComprobante(f);
-      setMontoDetectado(r.monto);
-      if (r.monto !== null) setMonto(String(r.monto));
-    } catch {
-      /* el vecino completa a mano */
-    } finally {
-      setOcrCorriendo(false);
-    }
+  function alElegirArchivo(e: React.ChangeEvent<HTMLInputElement>) {
+    setArchivo(e.target.files?.[0] ?? null);
   }
 
   async function enviar(e: React.FormEvent) {
@@ -77,9 +48,7 @@ export default function FormAporte({ campanaId }: { campanaId: string }) {
       setOk(true);
       setMonto("");
       setArchivo(null);
-      setMontoDetectado(null);
-      setDescartado(false);
-      router.refresh();
+          router.refresh();
     } finally {
       setEnviando(false);
     }
@@ -97,8 +66,7 @@ export default function FormAporte({ campanaId }: { campanaId: string }) {
           value={monto}
           onChange={(e) => {
             setMonto(e.target.value);
-            setDescartado(false);
-          }}
+                  }}
           required
           inputMode="decimal"
           placeholder="Monto en Bs"
@@ -111,52 +79,6 @@ export default function FormAporte({ campanaId }: { campanaId: string }) {
         onChange={alElegirArchivo}
         className="mt-3 w-full rounded-lg border border-dashed border-white/20 bg-slate-900 p-2.5 text-xs file:mr-3 file:rounded-md file:border-0 file:bg-emerald-500 file:px-3 file:py-1 file:text-slate-950"
       />
-      {ocrCorriendo && (
-        <p className="mt-2 animate-pulse text-xs text-emerald-300">
-          Leyendo tu comprobante…
-        </p>
-      )}
-
-      {/* Verificación OCR del monto (Spec-002 RF-4) */}
-      {montoDetectado !== null && monto !== "" && !ocrCorriendo && (
-        <div
-          className={`mt-3 flex items-start gap-3 rounded-lg px-3 py-2.5 text-sm ${
-            comparacion.estado === "coincide"
-              ? "bg-emerald-500/10 text-emerald-300"
-              : descartado
-                ? "bg-slate-500/10 text-slate-300"
-                : "bg-amber-400/10 text-amber-300"
-          }`}
-        >
-          {comparacion.estado === "coincide" ? (
-            <>
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-              El monto coincide con tu comprobante ({formatBs(montoDetectado)}).
-            </>
-          ) : descartado ? (
-            <>
-              <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              Monto del OCR descartado ({formatBs(montoDetectado)}). Continúas
-              con el monto manual.
-            </>
-          ) : (
-            <>
-              <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>
-                Tu comprobante dice {formatBs(montoDetectado)} y escribiste{" "}
-                {formatBs(Number(monto))}.
-                <button
-                  type="button"
-                  onClick={() => setDescartado(true)}
-                  className="ml-1 underline underline-offset-2 hover:text-amber-200"
-                >
-                  El monto detectado está mal, continuar igual
-                </button>
-              </span>
-            </>
-          )}
-        </div>
-      )}
 
       {error && (
         <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">
@@ -170,14 +92,10 @@ export default function FormAporte({ campanaId }: { campanaId: string }) {
       )}
       <button
         type="submit"
-        disabled={enviando || ocrCorriendo || bloquearPorOcr}
+        disabled={enviando}
         className="mt-4 w-full rounded-lg bg-emerald-500 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
       >
-        {enviando
-          ? "Enviando…"
-          : bloquearPorOcr
-            ? "Corrige el monto o confirma la discrepancia"
-            : "Registrar mi aporte"}
+        {enviando ? "Enviando…" : "Registrar mi aporte"}
       </button>
     </form>
   );

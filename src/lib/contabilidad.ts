@@ -150,30 +150,6 @@ export function puedeAportar(campana: {
   return { permitido: true, motivo: null };
 }
 
-export interface ComparacionMonto {
-  estado: "coincide" | "difiere" | "sin_deteccion";
-  diferencia: number;
-}
-
-/**
- * Spec-002 RF-3/4: compara el monto escrito con el detectado por el OCR.
- * Tolerancia de ±0.01 por redondeos del OCR; null en detectado = sin lectura.
- */
-export function compararMontos(
-  escrito: number | null,
-  detectado: number | null
-): ComparacionMonto {
-  if (escrito === null || detectado === null) {
-    return { estado: "sin_deteccion", diferencia: 0 };
-  }
-  const diferencia = Math.round((detectado - escrito) * 100) / 100;
-  if (Math.abs(diferencia) <= 0.01) {
-    return { estado: "coincide", diferencia: 0 };
-  }
-  return { estado: "difiere", diferencia };
-}
-
-/** Spec-002 RF-5: porcentaje de avance sobre la meta (0-100); sin meta → null. */
 export function progresoCampana(
   recaudado: number,
   meta: number | null

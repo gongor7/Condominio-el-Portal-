@@ -18,7 +18,7 @@ function hoyLaPaz(): string {
   return `${year}-${month}-${day}`;
 }
 
-/** RF-3: el vecino paga su multa completa con comprobante (OCR validado en el navegador). */
+/** RF-3: el vecino paga su multa completa con comprobante adjunto. */
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
