@@ -50,3 +50,10 @@ acepta `comprobante_url: null`), multas (`POST /api/multas/[id]/pagar`) y salón
 Se eliminó el último resto de OCR (`ocr_descartado` en API y formulario de expensas):
 cero referencias a OCR en `src/app`. Las columnas `comprobante_url` ya eran nulables,
 sin migración.
+
+## Adenda 2 (2026-10-03, a pedido del responsable)
+Subir sin comprobante exige **doble confirmación**: si no hay archivo adjunto,
+los 5 formularios (expensas, multas, salón, aporte, registrar) muestran un check
+obligatorio "Seguro que quiero subirlo sin el depósito/comprobante" y el botón
+se habilita solo con el check marcado (`src/app/confirmar-sin-comprobante.tsx`).
+La API ya aceptaba `null`; esto es solo salvaguarda en la UI.

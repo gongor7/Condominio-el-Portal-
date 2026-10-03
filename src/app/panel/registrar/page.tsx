@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ConfirmarSinComprobante } from "@/app/confirmar-sin-comprobante";
 
 const CATEGORIAS = [
   "mantenimiento",
@@ -17,6 +18,7 @@ const CATEGORIAS = [
 export default function Registrar() {
   const router = useRouter();
   const [archivo, setArchivo] = useState<File | null>(null);
+  const [sinComprobante, setSinComprobante] = useState(false);
   const [tipo, setTipo] = useState<"ingreso" | "egreso">("egreso");
   const [monto, setMonto] = useState("");
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10));
@@ -37,6 +39,7 @@ export default function Registrar() {
 
   function alElegirArchivo(e: React.ChangeEvent<HTMLInputElement>) {
     setArchivo(e.target.files?.[0] ?? null);
+    setSinComprobante(false);
   }
 
   async function guardar(e: React.FormEvent) {
@@ -88,7 +91,7 @@ export default function Registrar() {
       >
         <h1 className="text-xl font-bold">Registrar movimiento</h1>
         <p className="mt-1 text-sm text-slate-300">
-          Adjunta el comprobante del movimiento (foto o PDF).
+          Adjunta el comprobante del movimiento (foto o PDF, opcional).
         </p>
 
         <input
@@ -97,6 +100,10 @@ export default function Registrar() {
           onChange={alElegirArchivo}
           className="mt-4 w-full rounded-lg border border-dashed border-white/20 bg-slate-900 p-3 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-emerald-500 file:px-3 file:py-1.5 file:font-semibold file:text-slate-950"
         />
+
+        {!archivo && (
+          <ConfirmarSinComprobante checked={sinComprobante} onChange={setSinComprobante} />
+        )}
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <label className="text-sm">
@@ -182,7 +189,7 @@ export default function Registrar() {
 
         <button
           type="submit"
-          disabled={guardando}
+          disabled={guardando || (!archivo && !sinComprobante)}
           className="mt-6 w-full rounded-lg bg-emerald-500 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
         >
           {guardando ? "Guardando…" : "Publicar movimiento"}

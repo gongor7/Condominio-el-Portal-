@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { formatBs } from "@/lib/contabilidad";
 import { montoCompleto } from "@/lib/deudas";
+import { ConfirmarSinComprobante } from "@/app/confirmar-sin-comprobante";
 
 interface Multa {
   id: string;
@@ -21,6 +22,7 @@ export default function PagarMulta() {
   const [multa, setMulta] = useState<Multa | null>(null);
   const [monto, setMonto] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
+  const [sinComprobante, setSinComprobante] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -119,6 +121,10 @@ export default function PagarMulta() {
         />
         <p className="mt-1 text-xs text-slate-500">Comprobante opcional.</p>
 
+        {!archivo && (
+          <ConfirmarSinComprobante checked={sinComprobante} onChange={setSinComprobante} />
+        )}
+
         {faltaCompleto && (
           <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">
             La multa se paga completa: {formatBs(multa.monto)}.
@@ -132,7 +138,7 @@ export default function PagarMulta() {
 
         <button
           type="submit"
-          disabled={enviando || faltaCompleto}
+          disabled={enviando || faltaCompleto || (!archivo && !sinComprobante)}
           className="mt-6 w-full rounded-lg bg-emerald-500 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
         >
           {enviando ? "Registrando…" : "Pagar multa"}

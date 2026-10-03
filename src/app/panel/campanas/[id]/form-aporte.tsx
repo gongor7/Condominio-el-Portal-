@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SelectorCasas, useCasas, type CasaOpcion } from "@/app/selector-casas";
+import { ConfirmarSinComprobante } from "@/app/confirmar-sin-comprobante";
 
 export default function FormAporte({ campanaId }: { campanaId: string }) {
   const router = useRouter();
@@ -10,12 +11,14 @@ export default function FormAporte({ campanaId }: { campanaId: string }) {
   const [casa, setCasa] = useState<CasaOpcion | null>(null);
   const [monto, setMonto] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
+  const [sinComprobante, setSinComprobante] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const [enviando, setEnviando] = useState(false);
 
   function alElegirArchivo(e: React.ChangeEvent<HTMLInputElement>) {
     setArchivo(e.target.files?.[0] ?? null);
+    setSinComprobante(false);
   }
 
   async function enviar(e: React.FormEvent) {
@@ -80,6 +83,10 @@ export default function FormAporte({ campanaId }: { campanaId: string }) {
         className="mt-3 w-full rounded-lg border border-dashed border-white/20 bg-slate-900 p-2.5 text-xs file:mr-3 file:rounded-md file:border-0 file:bg-emerald-500 file:px-3 file:py-1 file:text-slate-950"
       />
 
+      {!archivo && (
+        <ConfirmarSinComprobante checked={sinComprobante} onChange={setSinComprobante} />
+      )}
+
       {error && (
         <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">
           {error}
@@ -92,7 +99,7 @@ export default function FormAporte({ campanaId }: { campanaId: string }) {
       )}
       <button
         type="submit"
-        disabled={enviando}
+        disabled={enviando || (!archivo && !sinComprobante)}
         className="mt-4 w-full rounded-lg bg-emerald-500 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
       >
         {enviando ? "Enviando…" : "Registrar mi aporte"}

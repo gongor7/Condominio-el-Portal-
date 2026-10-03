@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Eye, FileText, TriangleAlert, X } from "lucide-react";
 import { formatBs } from "@/lib/contabilidad";
 import { mesesPagables, totalEsperado } from "@/lib/expensas";
+import { ConfirmarSinComprobante } from "@/app/confirmar-sin-comprobante";
 
 interface Casa {
   id: string;
@@ -43,6 +44,7 @@ export default function PagarExpensa() {
   const [meses, setMeses] = useState<string[]>([]);
   const [monto, setMonto] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
+  const [sinComprobante, setSinComprobante] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [difConfirmada, setDifConfirmada] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,6 +104,7 @@ export default function PagarExpensa() {
     !casaId ||
     !monto ||
     Number(monto) <= 0 ||
+    (!archivo && !sinComprobante) ||
     (difiereTotal && !difConfirmada);
 
   let avisoBloqueo: string | null = null;
@@ -128,6 +131,7 @@ export default function PagarExpensa() {
 
   function alElegirArchivo(e: React.ChangeEvent<HTMLInputElement>) {
     setArchivo(e.target.files?.[0] ?? null);
+    setSinComprobante(false);
   }
 
   function quitarArchivo() {
@@ -344,6 +348,10 @@ export default function PagarExpensa() {
         )}
 
 
+
+        {!archivo && (
+          <ConfirmarSinComprobante checked={sinComprobante} onChange={setSinComprobante} />
+        )}
 
         {/* Validación contra el total esperado (RF-9) */}
         {difiereTotal && (

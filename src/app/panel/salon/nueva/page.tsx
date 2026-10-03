@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { hoyAmericaLaPaz } from "@/lib/salon";
 import { SelectorCasas, useCasas, type CasaOpcion } from "@/app/selector-casas";
+import { ConfirmarSinComprobante } from "@/app/confirmar-sin-comprobante";
 
 export default function NuevaReserva() {
   const router = useRouter();
@@ -15,11 +16,13 @@ export default function NuevaReserva() {
   const [monto, setMonto] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
+  const [sinComprobante, setSinComprobante] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
   function alElegirArchivo(e: React.ChangeEvent<HTMLInputElement>) {
     setArchivo(e.target.files?.[0] ?? null);
+    setSinComprobante(false);
   }
 
   async function guardar(e: React.FormEvent) {
@@ -162,6 +165,9 @@ export default function NuevaReserva() {
               className="mt-3 w-full rounded-lg border border-dashed border-white/20 bg-slate-900 p-3 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-emerald-500 file:px-3 file:py-1.5 file:font-semibold file:text-slate-950"
             />
             <p className="mt-1 text-xs text-slate-500">Comprobante opcional.</p>
+            {!archivo && (
+              <ConfirmarSinComprobante checked={sinComprobante} onChange={setSinComprobante} />
+            )}
           </>
         )}
 
@@ -187,7 +193,7 @@ export default function NuevaReserva() {
 
         <button
           type="submit"
-          disabled={guardando}
+          disabled={guardando || (modalidad === "casa" && !archivo && !sinComprobante)}
           className="mt-6 w-full rounded-lg bg-emerald-500 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
         >
           {guardando ? "Guardando…" : "Crear reserva"}
