@@ -18,7 +18,10 @@ export async function POST(
     );
   }
   const { id } = await params;
-  const { nota } = await req.json().catch(() => ({ nota: null }));
+  const { nota, cerrar_campanas } = await req.json().catch(() => ({
+    nota: null,
+    cerrar_campanas: false,
+  }));
 
   const { data: gestion } = await db
     .from("gestiones")
@@ -57,7 +60,7 @@ export async function POST(
   );
 
   const resultado = puedeCerrarGestion({
-    campanasActivas: campanasActivas ?? 0,
+    campanasActivas: cerrar_campanas ? 0 : (campanasActivas ?? 0),
     saldoPendiente,
   });
   if (!resultado.puedeCerrar) {
@@ -65,6 +68,15 @@ export async function POST(
       { error: resultado.bloqueos.join(" "), avisos: resultado.avisos },
       { status: 409 }
     );
+  }
+
+  // Cerrar en lote las campañas activas si el responsable lo confirmó
+  if (cerrar_campanas && (campanasActivas ?? 0) > 0) {
+    await db
+      .from("campanas")
+      .update({ estado: "cerrada", cerrada_en: new Date().toISOString() })
+      .eq("gestion_id", id)
+      .eq("estado", "activa");
   }
 
   const { error } = await db

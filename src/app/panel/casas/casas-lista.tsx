@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Gavel, Ban, CircleCheck } from "lucide-react";
+import { ChevronDown, Gavel, Ban, CircleCheck, Trash2, Phone } from "lucide-react";
 import { formatBs } from "@/lib/contabilidad";
+import { linkWhatsApp } from "@/lib/whatsapp";
 
 interface CasaEstado {
-  casa: { id: string; numero: number; vecino_nombre: string };
+  casa: { id: string; numero: number; vecino_nombre: string; telefono?: string | null };
   multas: {
     id: string;
     monto: number;
@@ -169,7 +170,10 @@ export function CasasLista({
                             </a>
                           )}
                           {esResponsable && m.estado === "impaga" && (
-                            <AnularMulta multaId={m.id} onHecho={() => router.refresh()} />
+                            <>
+                              <AnularMulta multaId={m.id} onHecho={() => router.refresh()} />
+                              <BorrarMulta multaId={m.id} onHecho={() => router.refresh()} />
+                            </>
                           )}
                         </span>
                       </li>
@@ -214,6 +218,40 @@ export function CasasLista({
                     <Gavel className="h-3.5 w-3.5" /> Multar a esta casa
                   </button>
                 )}
+
+                {/* Teléfono para notificaciones WhatsApp */}
+                <div className="mt-3 flex items-center gap-2 text-sm text-slate-400">
+                  <Phone className="h-3.5 w-3.5" />
+                  {c.casa.telefono ? (
+                    <span>{c.casa.telefono}</span>
+                  ) : (
+                    <span className="text-slate-500">Sin celular registrado</span>
+                  )}
+                  {esResponsable && (
+                    <button
+                      onClick={async () => {
+                        const tel = prompt(
+                          `Celular de Casa ${c.casa.numero} (8 dígitos, o con +591):`,
+                          c.casa.telefono ?? ""
+                        );
+                        if (tel === null) return;
+                        await fetch("/api/expensas/casas", {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            id: c.casa.id,
+                            vecino_nombre: c.casa.vecino_nombre,
+                            telefono: tel,
+                          }),
+                        });
+                        router.refresh();
+                      }}
+                      className="text-xs text-emerald-300 hover:underline"
+                    >
+                      {c.casa.telefono ? "editar" : "agregar"}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -239,7 +277,7 @@ function ModalMultar({
   onCerrar,
   onHecho,
 }: {
-  casa: { id: string; numero: number; vecino_nombre: string };
+  casa: { id: string; numero: number; vecino_nombre: string; telefono?: string | null };
   onCerrar: () => void;
   onHecho: () => void;
 }) {
@@ -247,6 +285,7 @@ function ModalMultar({
   const [monto, setMonto] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [creada, setCreada] = useState<{ monto: number; motivo: string } | null>(null);
 
   async function multar() {
     setEnviando(true);
@@ -262,7 +301,7 @@ function ModalMultar({
         setError(d.error ?? "No se pudo multar");
         return;
       }
-      onHecho();
+      setCreada({ monto: Number(monto), motivo: motivo.trim() });
     } finally {
       setEnviando(false);
     }
@@ -293,23 +332,85 @@ function ModalMultar({
           />
         </label>
         {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
-        <div className="mt-4 flex gap-2">
-          <button
-            onClick={multar}
-            disabled={enviando || !motivo.trim() || !monto}
-            className="flex-1 rounded-lg bg-red-500 py-2 font-semibold text-white disabled:opacity-50"
-          >
-            {enviando ? "Multando…" : "Crear multa"}
-          </button>
-          <button
-            onClick={onCerrar}
-            className="rounded-lg border border-white/15 px-4 py-2 text-sm"
-          >
-            Cancelar
-          </button>
-        </div>
+
+        {creada ? (
+          <div className="mt-4 space-y-3">
+            <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+              Multa creada: {formatBs(creada.monto)} por {creada.motivo}.
+            </p>
+            {(() => {
+              const link = linkWhatsApp(
+                casa.telefono,
+                `Condominio El Portal: se registró una multa de ${formatBs(creada.monto)} para la Casa ${casa.numero} por: ${creada.motivo}. Págala desde la plataforma: https://condominio-el-portal.vercel.app`
+              );
+              return link ? (
+                <a
+                  href={link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block rounded-lg bg-green-600 py-2 text-center text-sm font-semibold text-white"
+                >
+                  Enviar multa por WhatsApp a la Casa {casa.numero}
+                </a>
+              ) : (
+                <p className="text-xs text-slate-400">
+                  Esta casa no tiene celular registrado; edítalo en su detalle para
+                  poder notificar por WhatsApp.
+                </p>
+              );
+            })()}
+            <button
+              onClick={onHecho}
+              className="w-full rounded-lg border border-white/15 py-2 text-sm"
+            >
+              Listo
+            </button>
+          </div>
+        ) : (
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={multar}
+              disabled={enviando || !motivo.trim() || !monto}
+              className="flex-1 rounded-lg bg-red-500 py-2 font-semibold text-white disabled:opacity-50"
+            >
+              {enviando ? "Multando…" : "Crear multa"}
+            </button>
+            <button
+              onClick={onCerrar}
+              className="rounded-lg border border-white/15 px-4 py-2 text-sm"
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+/** Borrar multa impaga creada por error (sin impacto contable). */
+function BorrarMulta({ multaId, onHecho }: { multaId: string; onHecho: () => void }) {
+  async function borrar() {
+    if (!window.confirm("¿Borrar esta multa? Solo se puede si fue un error y nunca se pagó.")) {
+      return;
+    }
+    const res = await fetch(`/api/multas/${multaId}`, { method: "DELETE" });
+    if (!res.ok) {
+      const d = await res.json();
+      window.alert(d.error ?? "No se pudo borrar");
+      return;
+    }
+    onHecho();
+  }
+  return (
+    <button
+      onClick={borrar}
+      aria-label="Borrar multa por error"
+      title="Borrar (fue un error)"
+      className="rounded-full p-1 hover:bg-red-500/20"
+    >
+      <Trash2 className="h-3.5 w-3.5 text-slate-400" />
+    </button>
   );
 }
 

@@ -35,14 +35,19 @@ export async function PATCH(req: NextRequest) {
   if (!sesion || sesion.rol !== "responsable") {
     return NextResponse.json({ error: "Solo el responsable" }, { status: 403 });
   }
-  const { id, vecino_nombre } = await req.json().catch(() => ({}));
+  const { id, vecino_nombre, telefono } = await req.json().catch(() => ({}));
   if (typeof id !== "string" || typeof vecino_nombre !== "string" || !vecino_nombre.trim()) {
     return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   }
-  const { error } = await db
-    .from("casas")
-    .update({ vecino_nombre: vecino_nombre.trim() })
-    .eq("id", id);
+  const cambios: Record<string, string | null> = { vecino_nombre: vecino_nombre.trim() };
+  if (typeof telefono === "string") {
+    const limpio = telefono.replace(/[^0-9]/g, "");
+    if (limpio && !/^0*591\d{8}$|^\d{8}$/.test(limpio)) {
+      return NextResponse.json({ error: "Teléfono inválido (8 dígitos, o con +591)" }, { status: 400 });
+    }
+    cambios.telefono = limpio || null;
+  }
+  const { error } = await db.from("casas").update(cambios).eq("id", id);
   if (error) {
     return NextResponse.json({ error: "No se pudo renombrar" }, { status: 500 });
   }

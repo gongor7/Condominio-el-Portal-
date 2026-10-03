@@ -55,13 +55,27 @@ export default async function Panel() {
         <div className="mt-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold">{gestion?.nombre ?? "Sin gestión activa"}</h1>
           {esResponsable && gestion && <CerrarGestion gestionId={gestion.id} />}
+          {esResponsable && !gestion && (
+            <Link
+              href="/panel/nueva-gestion"
+              className="rounded-full bg-emerald-500 px-4 py-1.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
+            >
+              + Nueva gestión
+            </Link>
+          )}
         </div>
         <p className="mt-1 text-sm text-slate-300">
-          Responsable: {gestion?.responsable_nombre} · {gestion?.responsable_casa}
-          {gestion?.cerrada && (
-            <span className="ml-2 rounded-full bg-slate-800 px-2 py-0.5 text-xs text-amber-300">
-              cerrada {gestion.fecha_cierre ?? ""} — inmutable
-            </span>
+          {gestion ? (
+            <>
+              Responsable: {gestion.responsable_nombre} · {gestion.responsable_casa}
+              {gestion.cerrada && (
+                <span className="ml-2 rounded-full bg-slate-800 px-2 py-0.5 text-xs text-amber-300">
+                  cerrada {gestion.fecha_cierre ?? ""} — inmutable
+                </span>
+              )}
+            </>
+          ) : (
+            "Crea una nueva gestión para empezar a registrar movimientos."
           )}
         </p>
 

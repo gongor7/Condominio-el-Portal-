@@ -27,7 +27,7 @@ export default async function CasasPage() {
 
   const [{ data: casasRaw }, { data: periodosRaw }, { data: multasRaw }, { data: pagosRaw }] =
     await Promise.all([
-      db.from("casas").select("id, numero, vecino_nombre").eq("activo", true).order("numero"),
+      db.from("casas").select("id, numero, vecino_nombre, telefono").eq("activo", true).order("numero"),
       gestion
         ? db.from("periodos_expensas").select("mes, monto, fecha_limite").eq("gestion_id", gestion.id).order("mes")
         : Promise.resolve({ data: [] as never[] }),

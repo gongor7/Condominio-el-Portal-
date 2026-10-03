@@ -40,7 +40,7 @@ export default async function ExpensasPage() {
     const [rCasas, rPeriodos, rPagos] = await Promise.all([
       db
         .from("casas")
-        .select("id, numero, vecino_nombre")
+        .select("id, numero, vecino_nombre, telefono")
         .eq("activo", true)
         .order("numero"),
       db

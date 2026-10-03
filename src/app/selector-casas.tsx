@@ -7,6 +7,7 @@ export interface CasaOpcion {
   id: string;
   numero: number;
   vecino_nombre: string;
+  telefono?: string | null;
 }
 
 /** Carga las casas (requiere sesión) — RF-17: sin casas avisa y solo deja continuar al responsable. */

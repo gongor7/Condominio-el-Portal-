@@ -23,7 +23,7 @@ export async function GET() {
   }
 
   const [{ data: casas }, { data: periodos }, { data: pagos }] = await Promise.all([
-    db.from("casas").select("id, numero, vecino_nombre").eq("activo", true).order("numero"),
+    db.from("casas").select("id, numero, vecino_nombre, telefono").eq("activo", true).order("numero"),
     db
       .from("periodos_expensas")
       .select("id, mes, monto, fecha_limite")
