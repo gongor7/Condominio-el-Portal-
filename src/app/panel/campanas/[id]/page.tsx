@@ -61,7 +61,7 @@ export default async function CampanaDetalle({
         <p className="mt-1 text-slate-300">{campana.descripcion}</p>
         {campana.estado === "cerrada" && (
           <p className="mt-2 rounded-lg bg-slate-800 px-3 py-1.5 text-sm text-amber-300">
-            Campaña cerrada — los aportes quedaron congelados
+            Pago extraordinario cerrado — los aportes quedaron congelados
           </p>
         )}
 
@@ -169,7 +169,7 @@ export default async function CampanaDetalle({
         {/* Gastos */}
         {gastos && gastos.length > 0 && (
           <section className="mt-8">
-            <h2 className="text-lg font-semibold">Gastos de la campaña</h2>
+            <h2 className="text-lg font-semibold">Gastos del pago extraordinario</h2>
             <ul className="mt-3 divide-y divide-white/5 rounded-2xl border border-white/10">
               {gastos.map((g) => (
                 <li key={g.id} className="flex items-center justify-between px-4 py-3">

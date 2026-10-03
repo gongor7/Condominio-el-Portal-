@@ -41,7 +41,7 @@ export default function NuevaCampana() {
         <a href="/panel" className="text-sm text-emerald-300 hover:underline">
           ← Volver
         </a>
-        <h1 className="mt-2 text-xl font-bold">Nueva campaña de recaudación</h1>
+        <h1 className="mt-2 text-xl font-bold">Nuevo pago extraordinario</h1>
 
         <label className="mt-4 block text-sm">
           Título
@@ -83,7 +83,7 @@ export default function NuevaCampana() {
           disabled={guardando}
           className="mt-6 w-full rounded-lg bg-emerald-500 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
         >
-          {guardando ? "Creando…" : "Crear campaña"}
+          {guardando ? "Creando…" : "Crear pago extraordinario"}
         </button>
       </form>
     </main>

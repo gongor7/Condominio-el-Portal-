@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   const sesion = await sesionActual();
   if (!sesion || sesion.rol !== "responsable") {
     return NextResponse.json(
-      { error: "Solo el responsable puede crear campañas" },
+      { error: "Solo el responsable puede crear pagos extraordinarios" },
       { status: 403 }
     );
   }
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: "No se pudo crear la campaña" }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo crear el pago extraordinario" }, { status: 500 });
   }
   return NextResponse.json({ ok: true, campana: data });
 }

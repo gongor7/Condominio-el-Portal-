@@ -12,7 +12,7 @@ export async function POST(
   const sesion = await sesionActual();
   if (!sesion || sesion.rol !== "responsable") {
     return NextResponse.json(
-      { error: "Solo el responsable puede cerrar la campaña" },
+      { error: "Solo el responsable puede cerrar el pago extraordinario" },
       { status: 403 }
     );
   }
@@ -24,7 +24,7 @@ export async function POST(
     .eq("id", id)
     .maybeSingle();
   if (!campana) {
-    return NextResponse.json({ error: "Campaña no encontrada" }, { status: 404 });
+    return NextResponse.json({ error: "Pago extraordinario no encontrado" }, { status: 404 });
   }
   if (campana.estado === "cerrada") {
     return NextResponse.json({ error: "Ya está cerrada" }, { status: 409 });
@@ -47,7 +47,7 @@ export async function POST(
     .update({ estado: "cerrada", cerrada_en: new Date().toISOString() })
     .eq("id", id);
   if (error) {
-    return NextResponse.json({ error: "No se pudo cerrar la campaña" }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo cerrar el pago extraordinario" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, resumen });

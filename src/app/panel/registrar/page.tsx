@@ -158,7 +158,7 @@ export default function Registrar() {
 
         {tipo === "egreso" && campanas.length > 0 && (
           <label className="mt-3 block text-sm">
-            ¿Corresponde a una campaña? (opcional)
+            ¿Corresponde a un pago extraordinario? (opcional)
             <select
               value={campanaId}
               onChange={(e) => setCampanaId(e.target.value)}

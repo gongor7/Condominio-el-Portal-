@@ -157,3 +157,72 @@ export function progresoCampana(
   if (meta === null || meta <= 0) return null;
   return Math.min(100, Math.round((recaudado / meta) * 100));
 }
+
+/** Movimiento con fecha para la vista mensual del libro (Spec-008). */
+export interface TransaccionMensual extends TransaccionBase {
+  fecha: string; // yyyy-mm-dd
+}
+
+/** RF-6: filtra por mes (yyyy-mm) o devuelve todo. */
+export function filtrarPorMes<T extends TransaccionMensual>(
+  transacciones: T[],
+  mes: string | "todo"
+): T[] {
+  if (mes === "todo") return transacciones;
+  return transacciones.filter((t) => t.fecha.slice(0, 7) === mes);
+}
+
+/** RF-6: meses con movimientos, ordenados de nuevo a viejo. */
+export function mesesConMovimientos(transacciones: TransaccionMensual[]): string[] {
+  const set = new Set(transacciones.map((t) => t.fecha.slice(0, 7)));
+  return [...set].sort().reverse();
+}
+
+export interface ResumenMes {
+  inicio: number;
+  ingresos: number;
+  egresos: number;
+  fin: number;
+}
+
+/**
+ * RF-7: saldo con que comenzó el mes = saldo inicial de la gestión +
+ * movimientos vigentes anteriores al primer día del mes.
+ */
+export function saldoInicialMes(
+  transacciones: TransaccionMensual[],
+  mes: string,
+  saldoInicialGestion = 0
+): number {
+  const corte = `${mes}-01`;
+  return (
+    saldoInicialGestion +
+    transacciones
+      .filter((t) => !t.anulado && t.fecha < corte)
+      .reduce((acc, t) => acc + (t.tipo === "ingreso" ? t.monto : -t.monto), 0)
+  );
+}
+
+/** RF-6/RF-7: tarjeta del mes — inicio, ingresos, egresos y saldo final. */
+export function resumenMes(
+  transacciones: TransaccionMensual[],
+  mes: string,
+  saldoInicialGestion = 0
+): ResumenMes {
+  const inicio = saldoInicialMes(transacciones, mes, saldoInicialGestion);
+  const delMes = transacciones.filter(
+    (t) => !t.anulado && t.fecha.slice(0, 7) === mes
+  );
+  const ingresos = delMes
+    .filter((t) => t.tipo === "ingreso")
+    .reduce((a, t) => a + t.monto, 0);
+  const egresos = delMes
+    .filter((t) => t.tipo === "egreso")
+    .reduce((a, t) => a + t.monto, 0);
+  return {
+    inicio,
+    ingresos,
+    egresos,
+    fin: Math.round((inicio + ingresos - egresos) * 100) / 100,
+  };
+}

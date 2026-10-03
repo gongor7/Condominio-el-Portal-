@@ -39,11 +39,11 @@ export async function POST(req: NextRequest) {
     .eq("id", campana_id)
     .maybeSingle();
   if (!campana) {
-    return NextResponse.json({ error: "Campaña no encontrada" }, { status: 404 });
+    return NextResponse.json({ error: "Pago extraordinario no encontrado" }, { status: 404 });
   }
   if (campana.estado !== "activa") {
     return NextResponse.json(
-      { error: "La campaña ya está cerrada" },
+      { error: "El pago extraordinario ya está cerrado" },
       { status: 400 }
     );
   }

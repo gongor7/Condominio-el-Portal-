@@ -49,20 +49,20 @@ export default async function CampanasPage() {
         <Pestanas />
 
         <div className="mt-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Campañas de recaudación</h1>
+          <h1 className="text-2xl font-bold">Pagos extraordinarios</h1>
           {esResponsable && (
             <Link
               href="/panel/nueva-campana"
               className="rounded-full bg-emerald-500 px-4 py-1.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
             >
-              + Nueva campaña
+              + Nuevo pago extraordinario
             </Link>
           )}
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           {campanasConResumen.length === 0 && (
-            <p className="text-sm text-slate-400">Aún no hay campañas activas.</p>
+            <p className="text-sm text-slate-400">Aún no hay pagos extraordinarios activos.</p>
           )}
           {campanasConResumen.map((c) => (
             <Link

@@ -109,12 +109,12 @@ export default function Landing() {
             },
             {
               titulo: "Recaudaciones claras",
-              desc: "Campañas donde cada vecino sube su aporte y se ve en vivo cuánto se reunió y cuánto falta.",
+              desc: "Pagos extraordinarios donde cada vecino sube su aporte y se ve en vivo cuánto se reunió y cuánto falta.",
               icono: HandCoins,
             },
             {
               titulo: "¿Sobró o faltó?",
-              desc: "Al registrar los gastos, la plataforma muestra el saldo exacto de cada campaña.",
+              desc: "Al registrar los gastos, la plataforma muestra el saldo exacto de cada pago extraordinario.",
               icono: Scale,
             },
           ].map((c) => (

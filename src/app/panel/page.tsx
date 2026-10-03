@@ -6,6 +6,7 @@ import { sesionActual } from "@/lib/auth";
 import { formatBs, totalesGestion, saldoGestion } from "@/lib/contabilidad";
 import { CerrarGestion } from "./acciones";
 import { Pestanas } from "./pestanas";
+import { Libro } from "./libro";
 
 export const dynamic = "force-dynamic";
 
@@ -99,15 +100,15 @@ export default async function Panel() {
           </div>
         </div>
 
-        {/* Campañas: acceso desde pestañas */}
+        {/* Pagos extraordinarios: acceso desde pestañas */}
         <section className="mt-10">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Campañas de recaudación</h2>
+            <h2 className="text-xl font-semibold">Pagos extraordinarios</h2>
             <Link
               href="/panel/campanas"
               className="rounded-full border border-white/15 px-4 py-1.5 text-sm font-semibold hover:bg-white/10"
             >
-              Ver campañas
+              Ver pagos extraordinarios
             </Link>
           </div>
         </section>
@@ -125,55 +126,12 @@ export default async function Panel() {
               </Link>
             )}
           </div>
-          <div className="mt-4 overflow-x-auto rounded-2xl border border-white/10">
-            <table className="w-full min-w-[560px] text-sm">
-              <thead className="bg-white/5 text-left text-xs uppercase text-slate-400">
-                <tr>
-                  <th className="px-4 py-3">Fecha</th>
-                  <th className="px-4 py-3">Descripción</th>
-                  <th className="px-4 py-3">Categoría</th>
-                  <th className="px-4 py-3 text-right">Ingreso</th>
-                  <th className="px-4 py-3 text-right">Egreso</th>
-                </tr>
-              </thead>
-              <tbody>
-                {trans.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
-                      Sin movimientos aún.
-                    </td>
-                  </tr>
-                )}
-                {trans.map((t) => (
-                  <tr
-                    key={t.id}
-                    className={`border-t border-white/5 ${t.anulado ? "opacity-40 line-through" : ""}`}
-                  >
-                    <td className="px-4 py-3 whitespace-nowrap">{t.fecha}</td>
-                    <td className="px-4 py-3">
-                      {t.descripcion}
-                      {t.comprobante_url && (
-                        <a
-                          href={t.comprobante_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="ml-2 text-xs text-emerald-300 underline"
-                        >
-                          comprobante
-                        </a>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-slate-300">{t.categoria}</td>
-                    <td className="px-4 py-3 text-right text-emerald-400">
-                      {t.tipo === "ingreso" && !t.anulado ? formatBs(Number(t.monto)) : ""}
-                    </td>
-                    <td className="px-4 py-3 text-right text-red-400">
-                      {t.tipo === "egreso" && !t.anulado ? formatBs(Number(t.monto)) : ""}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="mt-4">
+            <Libro
+              movimientos={trans ?? []}
+              saldoInicial={Number(gestion?.saldo_inicial ?? 0)}
+              esResponsable={esResponsable}
+            />
           </div>
         </section>
       </div>

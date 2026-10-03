@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const PESTANAS = [
   { href: "/panel", label: "Resumen" },
-  { href: "/panel/campanas", label: "Campañas" },
+  { href: "/panel/campanas", label: "Pagos extraordinarios" },
   { href: "/panel/salon", label: "Salón" },
   { href: "/panel/expensas", label: "Expensas" },
   { href: "/panel/casas", label: "Casas" },

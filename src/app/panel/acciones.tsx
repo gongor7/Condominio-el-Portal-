@@ -83,7 +83,7 @@ export function CerrarGestion({ gestionId }: { gestionId: string }) {
               <span className="flex items-start gap-2">
                 <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
-                  <b>{estado.campanasActivas} campaña(s) activa(s)</b>
+                  <b>{estado.campanasActivas} pago(s) extraordinario(s) activo(s)</b>
                   <label className="mt-1.5 flex items-center gap-2 text-xs">
                     <input
                       type="checkbox"
@@ -98,7 +98,7 @@ export function CerrarGestion({ gestionId }: { gestionId: string }) {
             </li>
           ) : (
             <li className="flex items-center gap-2 text-emerald-300">
-              <CircleCheck className="h-4 w-4" /> Sin campañas activas
+              <CircleCheck className="h-4 w-4" /> Sin pagos extraordinarios activos
             </li>
           )}
 
@@ -160,7 +160,7 @@ export function CerrarGestion({ gestionId }: { gestionId: string }) {
             {cargando
               ? "Cerrando…"
               : bloquea
-                ? "Marca cerrar campañas para continuar"
+                ? "Marca cerrar pagos extraordinarios para continuar"
                 : "Confirmar cierre"}
           </button>
           <button
@@ -205,7 +205,7 @@ export function CerrarCampana({ campanaId }: { campanaId: string }) {
         disabled={cargando}
         className="rounded-full border border-amber-400/40 px-4 py-1.5 text-sm font-semibold text-amber-300 hover:bg-amber-400/10 disabled:opacity-50"
       >
-        {cargando ? "Cerrando…" : "Cerrar campaña"}
+        {cargando ? "Cerrando…" : "Cerrar pago extraordinario"}
       </button>
       {error && <p className="mt-2 text-sm text-red-300">{error}</p>}
     </div>
