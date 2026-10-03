@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { sesionActual } from "@/lib/auth";
+import { esFechaValida } from "@/lib/salon";
 
 const db = supabaseAdmin();
 
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Mes inválido (yyyy-mm)" }, { status: 400 });
   }
   const fechaLimite = typeof fecha_limite === "string" && fecha_limite ? fecha_limite : null;
-  if (fechaLimite && !/^d{4}-d{2}-d{2}$/.test(fechaLimite)) {
+  if (fechaLimite && !esFechaValida(fechaLimite)) {
     return NextResponse.json({ error: "Fecha límite inválida (yyyy-mm-dd)" }, { status: 400 });
   }
   const montoNum = Number(monto);
