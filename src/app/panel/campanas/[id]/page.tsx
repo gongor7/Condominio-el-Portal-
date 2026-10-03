@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { sesionActual } from "@/lib/auth";
 import { formatBs, resumenCampana, progresoCampana } from "@/lib/contabilidad";
 import FormAporte from "./form-aporte";
+import { BorrarAporte } from "./borrar-aporte";
 import { CerrarCampana } from "../../acciones";
 
 export const dynamic = "force-dynamic";
@@ -160,6 +161,7 @@ export default async function CampanaDetalle({
                     </a>
                   )}
                   <b className="text-emerald-400">{formatBs(Number(a.monto))}</b>
+                  {sesion.rol === "responsable" && <BorrarAporte aporteId={a.id} />}
                 </span>
               </li>
             ))}
