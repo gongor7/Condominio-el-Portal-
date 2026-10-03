@@ -18,12 +18,16 @@ export async function GET() {
     .order("fecha_inicio", { ascending: false })
     .limit(1)
     .maybeSingle();
+  const { data: casas } = await db
+    .from("casas")
+    .select("id, numero, vecino_nombre, telefono")
+    .eq("activo", true)
+    .order("numero");
   if (!gestion) {
-    return NextResponse.json({ casas: [], periodos: [], pagos: [] });
+    return NextResponse.json({ casas: casas ?? [], periodos: [], pagos: [] });
   }
 
-  const [{ data: casas }, { data: periodos }, { data: pagos }] = await Promise.all([
-    db.from("casas").select("id, numero, vecino_nombre, telefono").eq("activo", true).order("numero"),
+  const [{ data: periodos }, { data: pagos }] = await Promise.all([
     db
       .from("periodos_expensas")
       .select("id, mes, monto, fecha_limite")
