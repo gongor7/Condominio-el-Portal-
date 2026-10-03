@@ -89,12 +89,9 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  if (typeof comprobante_url !== "string" || !comprobante_url) {
-    return NextResponse.json(
-      { error: "Sube el comprobante del pago" },
-      { status: 400 }
-    );
-  }
+  // Comprobante opcional (disposición del responsable): null si no se adjunta.
+  const comprobante =
+    typeof comprobante_url === "string" && comprobante_url ? comprobante_url : null;
 
   const { data: casa } = await db
     .from("casas")
@@ -156,7 +153,7 @@ export async function POST(req: NextRequest) {
     p_vecino_casa: `Casa ${casa.numero}`,
     p_monto: montoNum,
     p_descripcion: typeof descripcion === "string" ? descripcion.trim() : "",
-    p_comprobante_url: comprobante_url,
+    p_comprobante_url: comprobante,
     p_casa_id: casa_id,
     p_modalidad: "casa",
   });

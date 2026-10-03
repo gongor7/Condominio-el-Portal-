@@ -42,3 +42,11 @@ Commit `8a41d9b` (2026-10-02) eliminó el OCR del proyecto: Tesseract.js + pdf.j
 
 ## Nota de compatibilidad
 Sustituye RF-3/RF-4 de Spec-002 (comparación OCR en vivo) y RF-4/RF-5 de Spec-003, RF-7/RF-9 de Spec-004, RF-3 de Spec-005 en lo referido a OCR. La exigencia de comprobante y confirmación humana (constitución #7) se mantiene: ahora toda la carga es humana.
+
+## Adenda (2026-10-03, disposición del responsable)
+El comprobante pasa a ser **opcional en todos los pagos**: expensas (`POST /api/expensas/pagar`
+acepta `comprobante_url: null`), multas (`POST /api/multas/[id]/pagar`) y salón
+(`POST /api/salon/crear` modalidad casa). Aportes y libro ya lo aceptaban.
+Se eliminó el último resto de OCR (`ocr_descartado` en API y formulario de expensas):
+cero referencias a OCR en `src/app`. Las columnas `comprobante_url` ya eran nulables,
+sin migración.

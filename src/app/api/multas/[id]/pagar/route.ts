@@ -30,9 +30,9 @@ export async function POST(
   const { id } = await params;
   const { comprobante_url, monto } = await req.json().catch(() => ({}));
 
-  if (typeof comprobante_url !== "string" || !comprobante_url) {
-    return NextResponse.json({ error: "Sube el comprobante del pago" }, { status: 400 });
-  }
+  // Comprobante opcional (disposición del responsable): null si no se adjunta.
+  const comprobante =
+    typeof comprobante_url === "string" && comprobante_url ? comprobante_url : null;
   const montoNum = Number(monto);
   if (!Number.isFinite(montoNum) || montoNum <= 0) {
     return NextResponse.json({ error: "Monto inválido" }, { status: 400 });
@@ -75,7 +75,7 @@ export async function POST(
   const { data: pagada, error } = await db.rpc("pagar_multa", {
     p_multa_id: id,
     p_gestion_id: gestion.id,
-    p_comprobante_url: comprobante_url,
+    p_comprobante_url: comprobante,
     p_fecha_pago: hoyLaPaz(),
     p_monto: montoNum,
   });

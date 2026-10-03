@@ -161,6 +161,7 @@ export default function NuevaReserva() {
               onChange={alElegirArchivo}
               className="mt-3 w-full rounded-lg border border-dashed border-white/20 bg-slate-900 p-3 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-emerald-500 file:px-3 file:py-1.5 file:font-semibold file:text-slate-950"
             />
+            <p className="mt-1 text-xs text-slate-500">Comprobante opcional.</p>
           </>
         )}
 

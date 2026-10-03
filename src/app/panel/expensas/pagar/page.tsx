@@ -100,7 +100,6 @@ export default function PagarExpensa() {
     enviando ||
     meses.length === 0 ||
     !casaId ||
-    !archivo ||
     !monto ||
     Number(monto) <= 0 ||
     (difiereTotal && !difConfirmada);
@@ -116,9 +115,6 @@ export default function PagarExpensa() {
     avisoBloqueo = "Marca en la lista al menos un mes a pagar.";
   } else if (!monto || Number(monto) <= 0) {
     avisoBloqueo = "Escribe el monto pagado en bolivianos.";
-  } else if (!archivo) {
-    avisoBloqueo = "Adjunta la imagen o PDF del comprobante de pago.";
-  } else if (difiereTotal && !difConfirmada) {
   } else if (difiereTotal && !difConfirmada) {
     avisoBloqueo = "El monto difiere del total esperado (confirma la diferencia para continuar).";
   }
@@ -165,7 +161,6 @@ export default function PagarExpensa() {
           meses: meses.filter((m) => pagables.includes(m)),
           monto: Number(monto),
           comprobante_url,
-          ocr_descartado: false,
           confirmar_diferencia: difConfirmada,
         }),
       });
@@ -285,11 +280,10 @@ export default function PagarExpensa() {
 
         {!archivo ? (
           <label className="mt-4 block text-sm">
-            Comprobante (foto o PDF) <span className="text-red-400">*</span>
+            Comprobante (foto o PDF, opcional)
             <input
               type="file"
               accept="image/*,application/pdf"
-              required
               onChange={alElegirArchivo}
               className="mt-1 w-full cursor-pointer rounded-lg border border-dashed border-white/20 bg-slate-900 p-3 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-emerald-500 file:px-3 file:py-1.5 file:font-semibold file:text-slate-950 hover:border-emerald-500/50"
             />

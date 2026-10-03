@@ -117,6 +117,7 @@ export default function PagarMulta() {
           onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
           className="mt-3 w-full rounded-lg border border-dashed border-white/20 bg-slate-900 p-3 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-emerald-500 file:px-3 file:py-1.5 file:font-semibold file:text-slate-950"
         />
+        <p className="mt-1 text-xs text-slate-500">Comprobante opcional.</p>
 
         {faltaCompleto && (
           <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">
@@ -131,7 +132,7 @@ export default function PagarMulta() {
 
         <button
           type="submit"
-          disabled={enviando || faltaCompleto || !archivo}
+          disabled={enviando || faltaCompleto}
           className="mt-6 w-full rounded-lg bg-emerald-500 py-2.5 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
         >
           {enviando ? "Registrando…" : "Pagar multa"}

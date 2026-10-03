@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  const { casa_id, meses, monto, comprobante_url, ocr_descartado, confirmar_diferencia } =
+  const { casa_id, meses, monto, comprobante_url, confirmar_diferencia } =
     await req.json().catch(() => ({}));
 
   if (!Array.isArray(meses) || meses.length === 0) {
@@ -47,9 +47,9 @@ export async function POST(req: NextRequest) {
   if (!Number.isFinite(montoNum) || montoNum <= 0) {
     return NextResponse.json({ error: "Monto inválido" }, { status: 400 });
   }
-  if (typeof comprobante_url !== "string") {
-    return NextResponse.json({ error: "Sube el comprobante del pago" }, { status: 400 });
-  }
+  // Comprobante opcional (disposición del responsable): null si no se adjunta.
+  const comprobante =
+    typeof comprobante_url === "string" && comprobante_url ? comprobante_url : null;
 
   const { data: gestion } = await db
     .from("gestiones")
@@ -104,9 +104,6 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  if (ocr_descartado !== true && ocr_descartado !== false && ocr_descartado !== undefined) {
-    return NextResponse.json({ error: "ocr_descartado inválido" }, { status: 400 });
-  }
 
   // Reparto: cada mes su monto, el último absorbe la diferencia (RF-10/RF-11)
   const reparto = repartoMontos(montoNum, meses, periodos);
@@ -117,7 +114,7 @@ export async function POST(req: NextRequest) {
     p_meses: reparto.map((r) => r.mes),
     p_montos_mes: reparto.map((r) => r.monto_mes),
     p_monto_total: montoNum,
-    p_comprobante_url: comprobante_url,
+    p_comprobante_url: comprobante,
     p_fecha_pago: hoyLaPaz(),
   });
 
