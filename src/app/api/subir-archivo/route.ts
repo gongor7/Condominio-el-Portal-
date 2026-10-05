@@ -15,6 +15,9 @@ export async function POST(req: NextRequest) {
 
   const form = await req.formData();
   const archivo = form.get("archivo");
+  // Bucket opcional (Spec-009); por defecto el histórico de comprobantes
+  const bucketParam = String(form.get("bucket") ?? BUCKET);
+  const bucket = ["comprobantes", "documentos"].includes(bucketParam) ? bucketParam : BUCKET;
   if (!(archivo instanceof File)) {
     return NextResponse.json({ error: "Falta el archivo" }, { status: 400 });
   }
@@ -34,7 +37,7 @@ export async function POST(req: NextRequest) {
   const ext = archivo.name.split(".").pop() ?? "bin";
   const nombre = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
   const { error } = await db.storage
-    .from(BUCKET)
+    .from(bucket)
     .upload(nombre, archivo, { contentType: archivo.type });
 
   if (error) {
@@ -44,6 +47,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { data } = db.storage.from(BUCKET).getPublicUrl(nombre);
+  const { data } = db.storage.from(bucket).getPublicUrl(nombre);
   return NextResponse.json({ ok: true, url: data.publicUrl });
 }
