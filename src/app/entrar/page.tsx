@@ -9,7 +9,19 @@ export default function Entrar() {
   const [pin, setPin] = useState("");
   const [esResponsable, setEsResponsable] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captcha, setCaptcha] = useState<{ captcha_id: string; pregunta: string } | null>(null);
+  const [captchaRespuesta, setCaptchaRespuesta] = useState("");
   const [cargando, setCargando] = useState(false);
+
+  async function pedirCaptcha() {
+    try {
+      const r = await fetch("/api/acceso/captcha");
+      const d = await r.json();
+      if (r.ok && d.captcha_id) setCaptcha(d);
+    } catch {
+      /* si falla, el próximo intento lo vuelve a pedir */
+    }
+  }
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -19,11 +31,19 @@ export default function Entrar() {
       const res = await fetch("/api/acceso", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ codigo, pin: esResponsable ? pin : undefined }),
+        body: JSON.stringify({
+          codigo,
+          pin: esResponsable ? pin : undefined,
+          captcha_id: captcha?.captcha_id,
+          captcha_respuesta: captchaRespuesta || undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "No se pudo ingresar");
+        if (data.captcha_requerido || res.status === 429) {
+          pedirCaptcha();
+        }
         return;
       }
       router.push("/panel");
@@ -78,6 +98,25 @@ export default function Entrar() {
               className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 tracking-widest focus:border-emerald-400 focus:outline-none"
             />
           </label>
+        )}
+
+        {captcha && (
+          <div className="mt-4 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4">
+            <label className="block text-sm font-semibold text-amber-200">
+              {captcha.pregunta}
+              <input
+                value={captchaRespuesta}
+                onChange={(e) => setCaptchaRespuesta(e.target.value)}
+                required={!!captcha}
+                inputMode="numeric"
+                autoComplete="off"
+                className="mt-1.5 w-full rounded-lg border border-amber-400/30 bg-slate-950 px-3 py-2 text-white focus:border-amber-300 focus:outline-none"
+              />
+            </label>
+            <p className="mt-1.5 text-xs text-amber-200/70">
+              Verificación por seguridad: resuelve la operación para continuar.
+            </p>
+          </div>
         )}
 
         {error && (
