@@ -10,6 +10,7 @@ const PESTANAS = [
   { href: "/panel/expensas", label: "Expensas" },
   { href: "/panel/casas", label: "Casas" },
   { href: "/panel/documentos", label: "Documentos" },
+  { href: "/panel/reportes", label: "Reportes" },
 ];
 
 /** RF-1/RF-2: pestañas del panel, cada una con su ruta propia. */

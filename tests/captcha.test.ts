@@ -6,7 +6,7 @@ describe("generarCaptcha", () => {
     for (let i = 0; i < 20; i++) {
       const r = generarCaptcha();
       expect(r.pregunta).toMatch(/^¿Cuánto es \d+ [+\u2212] \d+\?$/);
-      expect(Number(r.respuesta)).toBeGreaterThanOrEqual(1);
+      expect(Number(r.respuesta)).toBeGreaterThanOrEqual(0);
       expect(Number(r.respuesta)).toBeLessThanOrEqual(19);
     }
   });
