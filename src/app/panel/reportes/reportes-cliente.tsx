@@ -86,7 +86,7 @@ export function ReportesCliente({ esResponsable }: { esResponsable: boolean }) {
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
         <h2 className="font-semibold">Descargar ahora</h2>
         <p className="mt-1 text-sm text-slate-300">
-          Genera el reporte con los datos de este instante y lo descarga.
+          Genera el respaldo con TODA la base de datos (histórico completo, no solo el día) y lo descarga.
         </p>
         <a
           href="/api/reporte-excel"

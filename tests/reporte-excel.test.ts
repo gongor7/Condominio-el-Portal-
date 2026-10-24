@@ -65,6 +65,6 @@ describe("generarWorkbook", () => {
 
 describe("nombreSnapshot", () => {
   it("formato reporte-YYYY-MM-DD.xlsx", () => {
-    expect(nombreSnapshot(new Date("2026-10-11T12:00:00Z"))).toBe("reporte-2026-10-11.xlsx");
+    expect(nombreSnapshot(new Date("2026-10-11T12:00:00Z"))).toBe("respaldo-completo-2026-10-11.xlsx");
   });
 });

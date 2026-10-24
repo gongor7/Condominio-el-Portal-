@@ -68,8 +68,13 @@ export async function generarWorkbook(d: DatosReporte): Promise<Uint8Array> {
   // Hoja resumen con los indicadores clave
   const resumen = wb.addWorksheet("Resumen");
   resumen.columns = [{ width: 34 }, { width: 24 }];
-  resumen.addRow(["REPORTE GENERAL — Condominio El Portal"]).font = { bold: true, size: 14 };
+  resumen.addRow(["RESPALDO COMPLETO — Condominio El Portal"]).font = { bold: true, size: 14 };
   resumen.addRow(["Generado", d.generadoEn]);
+  // Rango real de los datos: demuestra que el archivo cubre todo el histórico
+  const fechas = d.transacciones.map((x) => String(x.fecha ?? "")).filter(Boolean).sort();
+  resumen.addRow(["Los datos de este archivo abarcan desde", fechas[0] ?? "(sin movimientos)"]);
+  resumen.addRow(["hasta", fechas[fechas.length - 1] ?? "(sin movimientos)"]);
+  resumen.addRow(["Este archivo contiene TODO el histórico, no solo un día"]);
   resumen.addRow([]);
   const vigentes = d.transacciones.filter((t) => !t.anulado);
   const ingresos = vigentes
@@ -107,7 +112,7 @@ export async function generarWorkbook(d: DatosReporte): Promise<Uint8Array> {
   return new Uint8Array(await wb.xlsx.writeBuffer());
 }
 
-/** Nombre estándar del snapshot: reporte-2026-10-11.xlsx */
+/** Nombre estándar: respaldo-completo-2026-10-11.xlsx (contiene TODO el histórico; la fecha es de generación). */
 export function nombreSnapshot(fecha = new Date()): string {
-  return `reporte-${fecha.toISOString().slice(0, 10)}.xlsx`;
+  return `respaldo-completo-${fecha.toISOString().slice(0, 10)}.xlsx`;
 }
