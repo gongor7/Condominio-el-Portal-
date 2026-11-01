@@ -50,7 +50,11 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Solo el responsable" }, { status: 403 });
   }
   const { nombre } = await req.json().catch(() => ({}));
-  if (typeof nombre !== "string" || !/^reporte-\d{4}-\d{2}-\d{2}\.xlsx$/.test(nombre)) {
+  // Acepta el nombre actual (respaldo-completo-*) y el histórico (reporte-*)
+  if (
+    typeof nombre !== "string" ||
+    !/^(reporte|respaldo-completo)-\d{4}-\d{2}-\d{2}\.xlsx$/.test(nombre)
+  ) {
     return NextResponse.json({ error: "Nombre inválido" }, { status: 400 });
   }
   const { data, error } = await db.storage.from(BUCKET).download(nombre);
