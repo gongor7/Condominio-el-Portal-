@@ -245,3 +245,34 @@ export function cuadraCampanasLibro(
     .reduce((a, c) => a + c.recaudado, 0);
   return Math.round((subido - ingresosLibro) * 100) / 100 === 0;
 }
+
+/** Normaliza texto para búsqueda: minúsculas y sin acentos. */
+export function normalizarTexto(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+export interface FiltrosLibro {
+  texto: string;
+  tipo: "todo" | "ingreso" | "egreso";
+  categoria: string; // "todas" o categoría exacta
+  incluirAnulados: boolean;
+}
+
+/** Spec-012: filtros combinables del libro contable (puro, cliente). */
+export function filtrarMovimientosLibro<
+  T extends { tipo: string; categoria: string; descripcion: string; anulado?: boolean },
+>(movs: T[], f: FiltrosLibro): T[] {
+  const q = normalizarTexto(f.texto.trim());
+  return movs.filter((t) => {
+    if (!f.incluirAnulados && t.anulado) return false;
+    if (f.tipo !== "todo" && t.tipo !== f.tipo) return false;
+    if (f.categoria !== "todas" && t.categoria !== f.categoria) return false;
+    if (q && !normalizarTexto(`${t.descripcion} ${t.categoria}`).includes(q)) {
+      return false;
+    }
+    return true;
+  });
+}

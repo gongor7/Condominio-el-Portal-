@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { History, Pencil, Ban } from "lucide-react";
+import { History, Pencil, Ban, Search, X } from "lucide-react";
 import {
   formatBs,
   filtrarPorMes,
+  filtrarMovimientosLibro,
   mesesConMovimientos,
   resumenMes,
 } from "@/lib/contabilidad";
@@ -92,16 +93,41 @@ export function Libro({
   const [editando, setEditando] = useState<MovimientoLibro | null>(null);
   const [anulando, setAnulando] = useState<MovimientoLibro | null>(null);
   const [historialDe, setHistorialDe] = useState<MovimientoLibro | null>(null);
+  // Spec-012: filtros combinables
+  const [texto, setTexto] = useState("");
+  const [tipo, setTipo] = useState<"todo" | "ingreso" | "egreso">("todo");
+  const [categoria, setCategoria] = useState("todas");
+  const [incluirAnulados, setIncluirAnulados] = useState(true);
 
   const normalizados = useMemo(
     () => movimientos.map((t) => ({ ...t, monto: Number(t.monto) })),
     [movimientos]
   );
   const meses = useMemo(() => mesesConMovimientos(normalizados), [normalizados]);
-  const filas = useMemo(
-    () => filtrarPorMes(normalizados, mes),
-    [normalizados, mes]
+  const categorias = useMemo(
+    () => Array.from(new Set(normalizados.map((t) => t.categoria))).sort(),
+    [normalizados]
   );
+  const delMes = useMemo(() => filtrarPorMes(normalizados, mes), [normalizados, mes]);
+  const filas = useMemo(
+    () =>
+      filtrarMovimientosLibro(delMes, {
+        texto,
+        tipo,
+        categoria,
+        incluirAnulados,
+      }),
+    [delMes, texto, tipo, categoria, incluirAnulados]
+  );
+  const hayFiltros =
+    texto.trim() !== "" || tipo !== "todo" || categoria !== "todas" || !incluirAnulados;
+
+  function limpiarFiltros() {
+    setTexto("");
+    setTipo("todo");
+    setCategoria("todas");
+    setIncluirAnulados(true);
+  }
   const resumen = mes === "todo" ? null : resumenMes(normalizados, mes, saldoInicial);
 
   // Scroll hasta la fila resaltada (llegada desde una campaña)
@@ -113,21 +139,77 @@ export function Libro({
 
   return (
     <div>
-      {/* Filtro por mes (RF-6) */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <label className="text-sm text-slate-300">Ver:</label>
-        <select
-          value={mes}
-          onChange={(e) => setMes(e.target.value)}
-          className="rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-sm"
-        >
-          <option value="todo">Todo</option>
-          {meses.map((m) => (
-            <option key={m} value={m}>
-              {etiquetaMes(m)}
-            </option>
-          ))}
-        </select>
+      {/* Filtros (RF-6 + Spec-012): mes, búsqueda, tipo y categoría */}
+      <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative min-w-[180px] flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <input
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              placeholder="Buscar en descripción o categoría…"
+              className="w-full rounded-lg border border-white/10 bg-slate-900 py-1.5 pl-9 pr-3 text-sm placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none"
+            />
+          </div>
+          <select
+            value={mes}
+            onChange={(e) => setMes(e.target.value)}
+            title="Mes"
+            className="rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-sm"
+          >
+            <option value="todo">Todo el tiempo</option>
+            {meses.map((m) => (
+              <option key={m} value={m}>
+                {etiquetaMes(m)}
+              </option>
+            ))}
+          </select>
+          <select
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value as "todo" | "ingreso" | "egreso")}
+            title="Tipo"
+            className="rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-sm"
+          >
+            <option value="todo">Ingresos y egresos</option>
+            <option value="ingreso">Solo ingresos</option>
+            <option value="egreso">Solo egresos</option>
+          </select>
+          <select
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value)}
+            title="Categoría"
+            className="rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-sm"
+          >
+            <option value="todas">Todas las categorías</option>
+            {categorias.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          <label className="flex items-center gap-1.5 text-sm text-slate-300">
+            <input
+              type="checkbox"
+              checked={incluirAnulados}
+              onChange={(e) => setIncluirAnulados(e.target.checked)}
+              className="h-4 w-4 accent-emerald-500"
+            />
+            Anulados
+          </label>
+          {hayFiltros && (
+            <button
+              onClick={limpiarFiltros}
+              className="flex items-center gap-1 rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold hover:bg-white/10"
+            >
+              <X className="h-3.5 w-3.5" /> Limpiar
+            </button>
+          )}
+        </div>
+        <p className="mt-2 text-xs text-slate-400">
+          {filas.length} movimiento{filas.length === 1 ? "" : "s"}
+          {mes !== "todo" ? ` en ${etiquetaMes(mes)}` : ""}
+          {hayFiltros ? " (con filtros aplicados)" : ""}
+        </p>
       </div>
 
       {/* Tarjeta del mes (RF-6/RF-7) */}
@@ -173,7 +255,9 @@ export function Libro({
             {filas.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
-                  Sin movimientos{mes !== "todo" ? " este mes" : " aún"}.
+                  {hayFiltros || mes !== "todo"
+                    ? "Sin movimientos que coincidan con lo que buscas."
+                    : "Sin movimientos aún."}
                 </td>
               </tr>
             )}
