@@ -6,6 +6,7 @@ import { totalExpensas, type PeriodoExpensa } from "@/lib/expensas";
 import { estadoMes } from "@/lib/deudas";
 import { hoyAmericaLaPaz } from "@/lib/salon";
 import { Pestanas } from "../pestanas";
+import { ConfigExpensas } from "./config-expensas";
 import { GrillaExpensas } from "./grilla-expensas";
 
 export const dynamic = "force-dynamic";
@@ -135,6 +136,16 @@ export default async function ExpensasPage() {
           </a>
         </div>
 
+        {esResponsable && (
+          <ConfigExpensas
+            periodos={periodos.map((p) => ({
+              mes: p.mes,
+              monto: Number(p.monto),
+              fecha_limite: p.fecha_limite,
+            }))}
+          />
+        )}
+
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
           <p className="text-xs uppercase text-slate-400">
             Recaudado en expensas en la gestión
@@ -145,7 +156,7 @@ export default async function ExpensasPage() {
         {periodosList.length === 0 ? (
           <p className="mt-8 text-sm text-slate-400">
             {esResponsable
-              ? "Aún no definiste el monto de ningún mes. Hazlo en la pestaña Casas → Configuración."
+              ? "Aún no hay meses publicados. Publicá el primero arriba, en Administración de expensas."
               : "El responsable todavía no definió períodos de expensa."}
           </p>
         ) : (

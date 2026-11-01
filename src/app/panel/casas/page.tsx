@@ -7,7 +7,7 @@ import { estadoMes } from "@/lib/deudas";
 import { hoyAmericaLaPaz } from "@/lib/salon";
 import { Pestanas } from "../pestanas";
 import { CasasLista } from "./casas-lista";
-import { ConfigExpensas } from "../expensas/config-expensas";
+import { AdminCasas } from "./admin-casas";
 
 export const dynamic = "force-dynamic";
 
@@ -116,7 +116,7 @@ export default async function CasasPage() {
           </p>
         </div>
 
-        {esResponsable && <ConfigExpensas casas={casas} />}
+        {esResponsable && <AdminCasas casas={casas} />}
 
         <CasasLista casasEstado={JSON.parse(JSON.stringify(casasEstado))} esResponsable={esResponsable} />
 
