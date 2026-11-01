@@ -19,11 +19,25 @@ export async function DELETE(
   }
   const { id } = await params;
 
+  // Bloquear si la campaña ya fue subida al libro (descuadraría, Spec-011)
   const { data: aporte } = await db
     .from("aportes")
-    .select("id")
+    .select("id, campanas(transaccion_id)")
     .eq("id", id)
     .maybeSingle();
+  if (aporte) {
+    const subida = (aporte.campanas as unknown as { transaccion_id: string | null } | null)
+      ?.transaccion_id;
+    if (subida) {
+      return NextResponse.json(
+        {
+          error:
+            "Esta campaña ya fue subida al libro contable; sus aportes no se pueden eliminar (anularía el cuadre).",
+        },
+        { status: 409 }
+      );
+    }
+  }
   if (!aporte) {
     return NextResponse.json({ error: "Aporte no encontrado" }, { status: 404 });
   }

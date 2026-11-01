@@ -5,7 +5,7 @@ import { sesionActual } from "@/lib/auth";
 import { formatBs, resumenCampana, progresoCampana } from "@/lib/contabilidad";
 import FormAporte from "./form-aporte";
 import { BorrarAporte } from "./borrar-aporte";
-import { CerrarCampana } from "../../acciones";
+import { SubirLibro, YaEnLibro } from "./subir-libro";
 
 export const dynamic = "force-dynamic";
 
@@ -47,17 +47,37 @@ export default async function CampanaDetalle({
 
   const progreso = progresoCampana(resumen.recaudado, resumen.meta);
 
+  // Fecha del ingreso consolidado (para el link "En el libro — ver")
+  let mesTransaccion = "";
+  if (campana.transaccion_id) {
+    const { data: t } = await supabase
+      .from("transacciones")
+      .select("fecha")
+      .eq("id", campana.transaccion_id)
+      .maybeSingle();
+    mesTransaccion = (t?.fecha ?? "").slice(0, 7);
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto max-w-2xl px-4 py-8">
         <a href="/panel" className="text-sm text-emerald-300 hover:underline">
           ← Volver al panel
         </a>
-        <div className="mt-3 flex items-center justify-between gap-4">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-bold">{campana.titulo}</h1>
-          {sesion.rol === "responsable" && campana.estado === "activa" && (
-            <CerrarCampana campanaId={campana.id} />
-          )}
+          {campana.transaccion_id ? (
+            <YaEnLibro
+              transaccionId={campana.transaccion_id}
+              mes={mesTransaccion}
+            />
+          ) : sesion.rol === "responsable" ? (
+            <SubirLibro
+              campanaId={campana.id}
+              estado={campana.estado}
+              recaudado={resumen.recaudado}
+            />
+          ) : null}
         </div>
         <p className="mt-1 text-slate-300">{campana.descripcion}</p>
         {campana.estado === "cerrada" && (

@@ -27,6 +27,7 @@ const ORIGEN: Record<string, string> = {
   expensas: "Expensa",
   multas: "Multa",
   "alquiler salón": "Salón",
+  "pagos extraordinarios": "Campaña",
 };
 
 const CATEGORIAS_EDITABLES = [
@@ -76,7 +77,18 @@ export function Libro({
   esResponsable: boolean;
 }) {
   const router = useRouter();
-  const [mes, setMes] = useState<string>("todo");
+  // Spec-011: llegada desde "subir al libro" — ?mes=YYYY-MM&resaltar=<transaccion_id>
+  const inicial = useMemo(() => {
+    if (typeof window === "undefined") return { mes: "todo", resaltar: null as string | null };
+    const sp = new URLSearchParams(window.location.search);
+    const m = sp.get("mes");
+    return {
+      mes: m && /^\d{4}-\d{2}$/.test(m) ? m : "todo",
+      resaltar: sp.get("resaltar"),
+    };
+  }, []);
+  const [mes, setMes] = useState<string>(inicial.mes);
+  const [resaltar] = useState<string | null>(inicial.resaltar);
   const [editando, setEditando] = useState<MovimientoLibro | null>(null);
   const [anulando, setAnulando] = useState<MovimientoLibro | null>(null);
   const [historialDe, setHistorialDe] = useState<MovimientoLibro | null>(null);
@@ -91,6 +103,13 @@ export function Libro({
     [normalizados, mes]
   );
   const resumen = mes === "todo" ? null : resumenMes(normalizados, mes, saldoInicial);
+
+  // Scroll hasta la fila resaltada (llegada desde una campaña)
+  useEffect(() => {
+    if (!resaltar) return;
+    const el = document.getElementById(`fila-${resaltar}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [resaltar, filas]);
 
   return (
     <div>
@@ -164,7 +183,10 @@ export function Libro({
               return (
                 <tr
                   key={t.id}
-                  className={`border-t border-white/5 ${t.anulado ? "opacity-40 line-through" : ""}`}
+                  id={`fila-${t.id}`}
+                  className={`border-t border-white/5 ${t.anulado ? "opacity-40 line-through" : ""} ${
+                    resaltar === t.id ? "bg-emerald-500/15 ring-1 ring-inset ring-emerald-400/60" : ""
+                  }`}
                 >
                   <td className="px-4 py-3 whitespace-nowrap">{t.fecha}</td>
                   <td className="px-4 py-3">

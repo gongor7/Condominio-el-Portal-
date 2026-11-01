@@ -226,3 +226,22 @@ export function resumenMes(
     fin: Math.round((inicio + ingresos - egresos) * 100) / 100,
   };
 }
+
+export interface CampanaLibro {
+  transaccion_id: string | null;
+  recaudado: number; // total de aportes vigentes de la campaña
+}
+
+/**
+ * Constitución #9 (Spec-011): lo recaudado por campañas subidas al libro
+ * debe cuadrar con la suma de ingresos "pagos extraordinarios" no anulados.
+ */
+export function cuadraCampanasLibro(
+  campanas: CampanaLibro[],
+  ingresosLibro: number
+): boolean {
+  const subido = campanas
+    .filter((c) => c.transaccion_id !== null)
+    .reduce((a, c) => a + c.recaudado, 0);
+  return Math.round((subido - ingresosLibro) * 100) / 100 === 0;
+}
